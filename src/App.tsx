@@ -15,6 +15,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminClients from "./pages/admin/AdminClients";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCallLog from "./pages/admin/AdminCallLog";
+import AdminCampaigns from "./pages/admin/AdminCampaigns";
 import WorkspaceDashboard from "./pages/workspace/WorkspaceDashboard";
 import WorkspaceCampaigns from "./pages/workspace/WorkspaceCampaigns";
 import WorkspaceContacts from "./pages/workspace/WorkspaceContacts";
@@ -42,6 +43,13 @@ const App = () => (
             } />
 
             {/* Admin routes */}
+            <Route path="/admin/campaigns" element={
+              <ProtectedRoute>
+                <AdminGuard>
+                  <AdminCampaigns />
+                </AdminGuard>
+              </ProtectedRoute>
+            } />
             <Route path="/admin/dashboard" element={
               <ProtectedRoute>
                 <AdminGuard>

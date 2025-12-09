@@ -47,10 +47,11 @@ export function Sidebar({ items }: SidebarProps) {
 }
 
 export const adminSidebarItems: SidebarItem[] = [
+  { label: 'Campaigns', href: '/admin/campaigns', icon: Megaphone },
+  { label: 'Call Log', href: '/admin/call-log', icon: PhoneCall },
   { label: 'Admin Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { label: 'Clients', href: '/admin/clients', icon: Users },
   { label: 'User Management', href: '/admin/users', icon: UserCog },
-  { label: 'Call Log', href: '/admin/call-log', icon: PhoneCall },
 ];
 
 export const workspaceSidebarItems = (clientId: string): SidebarItem[] => [
