@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type FilterStatus = 'all' | 'active' | 'pending' | 'paused' | 'completed';
 
@@ -17,22 +17,15 @@ const filters: { value: FilterStatus; label: string }[] = [
 
 export function CampaignFilters({ activeFilter, onFilterChange }: CampaignFiltersProps) {
   return (
-    <div className="flex flex-wrap gap-2">
-      {filters.map((filter) => (
-        <button
-          key={filter.value}
-          onClick={() => onFilterChange(filter.value)}
-          className={cn(
-            'px-4 py-1.5 text-sm font-medium rounded-full transition-colors',
-            activeFilter === filter.value
-              ? 'bg-primary text-primary-foreground'
-              : 'border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
-          )}
-        >
-          {filter.label}
-        </button>
-      ))}
-    </div>
+    <Tabs value={activeFilter} onValueChange={(value) => onFilterChange(value as FilterStatus)}>
+      <TabsList>
+        {filters.map((filter) => (
+          <TabsTrigger key={filter.value} value={filter.value}>
+            {filter.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   );
 }
 
