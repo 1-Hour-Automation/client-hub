@@ -8,10 +8,13 @@ import { ActivitySnapshot } from '@/components/dashboard/ActivitySnapshot';
 import { RecentActivityFeed, ActivityItem } from '@/components/dashboard/RecentActivityFeed';
 import { CampaignHealthIndicator } from '@/components/dashboard/CampaignHealthIndicator';
 import { QuickLinks } from '@/components/dashboard/QuickLinks';
+import { NotificationsTab, useNotificationCount } from '@/components/dashboard/NotificationsTab';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfQuarter, endOfQuarter, startOfWeek, endOfWeek, addDays } from 'date-fns';
-import { Info } from 'lucide-react';
+import { Info, AlertTriangle, Bell } from 'lucide-react';
 
 interface KPIs {
   attendedMeetings: number;
@@ -34,6 +37,9 @@ export default function WorkspaceDashboard() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [healthCounts, setHealthCounts] = useState<HealthCounts>({ healthy: 0, moderate: 0, attention: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
+  
+  const actionRequiredCount = useNotificationCount(clientId || '');
 
   useEffect(() => {
     async function fetchData() {
@@ -82,7 +88,6 @@ export default function WorkspaceDashboard() {
           .eq('status', 'active');
 
         // Fetch contacts reached this week (using created_at as proxy)
-        // TODO: Track actual "reached" status when call logging is implemented
         const { count: contactsReachedCount } = await supabase
           .from('contacts')
           .select('id', { count: 'exact', head: true })
@@ -212,42 +217,79 @@ export default function WorkspaceDashboard() {
           </p>
         </div>
 
-        <Alert className="bg-muted/50 border-border">
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            Holiday season may impact response rates. We're adjusting outreach timing accordingly.
-          </AlertDescription>
-        </Alert>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="notifications" className="relative">
+              <Bell className="h-4 w-4 mr-1.5" />
+              Notifications
+              {actionRequiredCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="ml-2 h-5 min-w-5 px-1.5 text-xs"
+                >
+                  {actionRequiredCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
 
-        <PortfolioKPIs
-          attendedMeetings={kpis.attendedMeetings}
-          upcomingMeetings={kpis.upcomingMeetings}
-          activeCampaigns={kpis.activeCampaigns}
-          contactsReached={kpis.contactsReached}
-          isLoading={isLoading}
-        />
+          <TabsContent value="overview" className="mt-6 space-y-6">
+            {actionRequiredCount > 0 && (
+              <Alert 
+                className="bg-amber-500/10 border-amber-500/30 cursor-pointer hover:bg-amber-500/15 transition-colors"
+                onClick={() => setActiveTab('notifications')}
+              >
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-700">
+                  You have {actionRequiredCount} item{actionRequiredCount > 1 ? 's' : ''} needing your attention.{' '}
+                  <span className="underline font-medium">View them in Notifications.</span>
+                </AlertDescription>
+              </Alert>
+            )}
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-6">
-            <CampaignOverviewTable campaigns={campaigns} isLoading={isLoading} />
-            <RecentActivityFeed activities={activities} isLoading={isLoading} />
-          </div>
-          <div className="space-y-6">
-            <CampaignHealthIndicator
-              healthyCampaigns={healthCounts.healthy}
-              moderateCampaigns={healthCounts.moderate}
-              attentionCampaigns={healthCounts.attention}
-              isLoading={isLoading}
-            />
-            <ActivitySnapshot
+            <Alert className="bg-muted/50 border-border">
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Holiday season may impact response rates. We're adjusting outreach timing accordingly.
+              </AlertDescription>
+            </Alert>
+
+            <PortfolioKPIs
+              attendedMeetings={kpis.attendedMeetings}
+              upcomingMeetings={kpis.upcomingMeetings}
+              activeCampaigns={kpis.activeCampaigns}
               contactsReached={kpis.contactsReached}
-              connects={Math.floor(kpis.contactsReached * 0.4)} // TODO: Track actual connects
-              positiveConversations={Math.floor(kpis.contactsReached * 0.15)} // TODO: Track actual conversations
               isLoading={isLoading}
             />
-            <QuickLinks clientId={clientId!} />
-          </div>
-        </div>
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="lg:col-span-2 space-y-6">
+                <CampaignOverviewTable campaigns={campaigns} isLoading={isLoading} />
+                <RecentActivityFeed activities={activities} isLoading={isLoading} />
+              </div>
+              <div className="space-y-6">
+                <CampaignHealthIndicator
+                  healthyCampaigns={healthCounts.healthy}
+                  moderateCampaigns={healthCounts.moderate}
+                  attentionCampaigns={healthCounts.attention}
+                  isLoading={isLoading}
+                />
+                <ActivitySnapshot
+                  contactsReached={kpis.contactsReached}
+                  connects={Math.floor(kpis.contactsReached * 0.4)}
+                  positiveConversations={Math.floor(kpis.contactsReached * 0.15)}
+                  isLoading={isLoading}
+                />
+                <QuickLinks clientId={clientId!} />
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="notifications" className="mt-6">
+            <NotificationsTab clientId={clientId!} />
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
