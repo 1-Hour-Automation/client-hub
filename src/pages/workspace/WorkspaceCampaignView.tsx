@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { workspaceSidebarItems } from '@/components/layout/Sidebar';
@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, AlertTriangle, Calendar, Users, Phone, MessageSquare, Clock, Globe, Link, User, CheckCircle, Percent, PhoneCall } from 'lucide-react';
+import { CampaignOnboardingForm } from '@/components/campaigns/CampaignOnboardingForm';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format, startOfQuarter, addDays, startOfMonth, endOfMonth } from 'date-fns';
 
@@ -20,6 +21,27 @@ interface CampaignDetails {
   name: string;
   status: string;
   created_at: string;
+  onboarding_completed_at: string | null;
+  onboarding_target_job_titles: string | null;
+  onboarding_industries_to_target: string | null;
+  onboarding_company_size_range: string | null;
+  onboarding_required_skills: string | null;
+  onboarding_locations_to_target: string | null;
+  onboarding_excluded_industries: string | null;
+  onboarding_example_ideal_companies: string | null;
+  onboarding_value_proposition: string | null;
+  onboarding_key_pain_points: string | null;
+  onboarding_unique_differentiator: string | null;
+  onboarding_example_messaging: string | null;
+  onboarding_common_objections: string | null;
+  onboarding_recommended_responses: string | null;
+  onboarding_compliance_notes: string | null;
+  onboarding_qualified_prospect_definition: string | null;
+  onboarding_disqualifying_factors: string | null;
+  onboarding_scheduling_link: string | null;
+  onboarding_target_timezone: string | null;
+  onboarding_booking_instructions: string | null;
+  onboarding_bdr_notes: string | null;
 }
 
 interface CampaignMetrics {
@@ -62,6 +84,11 @@ export default function WorkspaceCampaignView() {
   const [callLogs, setCallLogs] = useState<CallLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [meetingStatusFilter, setMeetingStatusFilter] = useState<MeetingStatusFilter>('all');
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+
+  const handleOnboardingCompleted = useCallback(() => {
+    setOnboardingCompleted(true);
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
@@ -93,6 +120,7 @@ export default function WorkspaceCampaignView() {
         }
 
         setCampaign(campaignData);
+        setOnboardingCompleted(!!campaignData.onboarding_completed_at);
 
         // Fetch metrics
         const quarterStart = startOfQuarter(new Date());
@@ -328,6 +356,7 @@ export default function WorkspaceCampaignView() {
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
             <TabsTrigger value="meetings">Meetings</TabsTrigger>
             <TabsTrigger value="script">Script & Playbook</TabsTrigger>
             <TabsTrigger value="data">Data & ICP</TabsTrigger>
@@ -443,6 +472,36 @@ export default function WorkspaceCampaignView() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="onboarding" className="space-y-6">
+            <CampaignOnboardingForm
+              campaignId={campaignId!}
+              isCompleted={onboardingCompleted}
+              onCompleted={handleOnboardingCompleted}
+              initialData={campaign ? {
+                target_job_titles: campaign.onboarding_target_job_titles || '',
+                industries_to_target: campaign.onboarding_industries_to_target || '',
+                company_size_range: campaign.onboarding_company_size_range || '',
+                required_skills: campaign.onboarding_required_skills || '',
+                locations_to_target: campaign.onboarding_locations_to_target || '',
+                excluded_industries: campaign.onboarding_excluded_industries || '',
+                example_ideal_companies: campaign.onboarding_example_ideal_companies || '',
+                value_proposition: campaign.onboarding_value_proposition || '',
+                key_pain_points: campaign.onboarding_key_pain_points || '',
+                unique_differentiator: campaign.onboarding_unique_differentiator || '',
+                example_messaging: campaign.onboarding_example_messaging || '',
+                common_objections: campaign.onboarding_common_objections || '',
+                recommended_responses: campaign.onboarding_recommended_responses || '',
+                compliance_notes: campaign.onboarding_compliance_notes || '',
+                qualified_prospect_definition: campaign.onboarding_qualified_prospect_definition || '',
+                disqualifying_factors: campaign.onboarding_disqualifying_factors || '',
+                scheduling_link: campaign.onboarding_scheduling_link || '',
+                target_timezone: campaign.onboarding_target_timezone || '',
+                booking_instructions: campaign.onboarding_booking_instructions || '',
+                bdr_notes: campaign.onboarding_bdr_notes || '',
+              } : undefined}
+            />
           </TabsContent>
 
           <TabsContent value="meetings" className="space-y-6">
