@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { workspaceSidebarItems } from '@/components/layout/Sidebar';
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -48,12 +48,13 @@ const STATUS_ORDER: Record<string, number> = {
 
 export default function WorkspaceCampaigns() {
   const { clientId } = useParams<{ clientId: string }>();
+  const navigate = useNavigate();
   const { isInternalUser } = useAuth();
   const [clientName, setClientName] = useState<string>('');
   const [campaigns, setCampaigns] = useState<CampaignWithMetrics[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newCampaign, setNewCampaign] = useState({ name: '', status: 'active' });
+  const [newCampaign, setNewCampaign] = useState({ name: '', campaignType: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
   const { toast } = useToast();
@@ -138,18 +139,26 @@ export default function WorkspaceCampaigns() {
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from('campaigns').insert({
-        name: newCampaign.name.trim(),
-        status: newCampaign.status,
-        client_id: clientId,
-      });
+      const { data, error } = await supabase
+        .from('campaigns')
+        .insert({
+          name: newCampaign.name.trim(),
+          status: 'onboarding_required',
+          phase: 'not_started',
+          campaign_type: newCampaign.campaignType.trim() || null,
+          client_id: clientId,
+        })
+        .select('id')
+        .single();
 
       if (error) throw error;
 
       toast({ title: 'Campaign created', description: `${newCampaign.name} has been added.` });
-      setNewCampaign({ name: '', status: 'active' });
+      setNewCampaign({ name: '', campaignType: '' });
       setIsDialogOpen(false);
-      fetchData();
+      
+      // Navigate to the new campaign view
+      navigate(`/workspace/${clientId}/campaigns/${data.id}`);
     } catch (error) {
       console.error('Failed to create campaign:', error);
       toast({
@@ -212,21 +221,13 @@ export default function WorkspaceCampaigns() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                      value={newCampaign.status}
-                      onValueChange={(value) => setNewCampaign({ ...newCampaign, status: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="paused">Paused</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="campaignType">Campaign Type (Optional)</Label>
+                    <Input
+                      id="campaignType"
+                      placeholder="e.g., Cold Calling, Email Outreach"
+                      value={newCampaign.campaignType}
+                      onChange={(e) => setNewCampaign({ ...newCampaign, campaignType: e.target.value })}
+                    />
                   </div>
                   <Button type="submit" className="w-full" disabled={isSubmitting}>
                     {isSubmitting ? 'Creating...' : 'Create Campaign'}

@@ -80,6 +80,7 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          campaign_type: string | null
           client_id: string
           created_at: string
           id: string
@@ -105,9 +106,11 @@ export type Database = {
           onboarding_target_timezone: string | null
           onboarding_unique_differentiator: string | null
           onboarding_value_proposition: string | null
+          phase: string
           status: string
         }
         Insert: {
+          campaign_type?: string | null
           client_id: string
           created_at?: string
           id?: string
@@ -133,9 +136,11 @@ export type Database = {
           onboarding_target_timezone?: string | null
           onboarding_unique_differentiator?: string | null
           onboarding_value_proposition?: string | null
+          phase?: string
           status?: string
         }
         Update: {
+          campaign_type?: string | null
           client_id?: string
           created_at?: string
           id?: string
@@ -161,6 +166,7 @@ export type Database = {
           onboarding_target_timezone?: string | null
           onboarding_unique_differentiator?: string | null
           onboarding_value_proposition?: string | null
+          phase?: string
           status?: string
         }
         Relationships: [
