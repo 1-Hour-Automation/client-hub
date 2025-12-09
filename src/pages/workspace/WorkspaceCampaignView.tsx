@@ -9,7 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, AlertTriangle, Calendar, Users, Phone, MessageSquare, Clock, Globe, Link, User, CheckCircle, Percent, PhoneCall } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { ArrowLeft, AlertTriangle, Calendar, Users, Phone, MessageSquare, Clock, Globe, Link, User, CheckCircle, Percent, PhoneCall, Send, ClipboardList } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CampaignOnboardingForm } from '@/components/campaigns/CampaignOnboardingForm';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format, startOfQuarter, addDays, startOfMonth, endOfMonth } from 'date-fns';
@@ -20,6 +22,8 @@ interface CampaignDetails {
   id: string;
   name: string;
   status: string;
+  phase: string;
+  campaign_type: string | null;
   created_at: string;
   onboarding_completed_at: string | null;
   onboarding_target_job_titles: string | null;
@@ -76,6 +80,7 @@ export default function WorkspaceCampaignView() {
   const { clientId, campaignId } = useParams<{ clientId: string; campaignId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isInternalUser } = useAuth();
   
   const [clientName, setClientName] = useState('');
   const [campaign, setCampaign] = useState<CampaignDetails | null>(null);
@@ -357,13 +362,34 @@ export default function WorkspaceCampaignView() {
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
-            <TabsTrigger value="meetings">Meetings</TabsTrigger>
-            <TabsTrigger value="script">Script & Playbook</TabsTrigger>
-            <TabsTrigger value="data">Data & ICP</TabsTrigger>
-            <TabsTrigger value="calllog">Call Log</TabsTrigger>
+            {onboardingCompleted && (
+              <>
+                <TabsTrigger value="meetings">Meetings</TabsTrigger>
+                <TabsTrigger value="script">Script & Playbook</TabsTrigger>
+                <TabsTrigger value="data">Data & ICP</TabsTrigger>
+                <TabsTrigger value="calllog">Call Log</TabsTrigger>
+              </>
+            )}
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
+            {/* Onboarding Required Banner */}
+            {!onboardingCompleted && (
+              <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30">
+                <ClipboardList className="h-5 w-5 text-blue-600" />
+                <AlertTitle className="text-blue-900 dark:text-blue-100">Onboarding Required</AlertTitle>
+                <AlertDescription className="text-blue-700 dark:text-blue-300 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <span>Please complete the campaign onboarding form to activate this campaign.</span>
+                  {isInternalUser && (
+                    <Button size="sm" variant="outline" className="border-blue-600 text-blue-700 hover:bg-blue-100 gap-2 shrink-0">
+                      <Send className="h-4 w-4" />
+                      Send Onboarding Form to Client
+                    </Button>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Core KPI Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card>
