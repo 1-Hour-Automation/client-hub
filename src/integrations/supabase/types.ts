@@ -84,6 +84,7 @@ export type Database = {
           client_id: string
           created_at: string
           id: string
+          internal_notes: string | null
           name: string
           onboarding_bdr_notes: string | null
           onboarding_booking_instructions: string | null
@@ -106,14 +107,21 @@ export type Database = {
           onboarding_target_timezone: string | null
           onboarding_unique_differentiator: string | null
           onboarding_value_proposition: string | null
+          performance_fee_per_meeting: number | null
+          performance_start_date: string | null
           phase: string
+          quarterly_attended_meeting_guarantee: number | null
+          sprint_campaign_id: string | null
           status: string
+          target: string | null
+          tier: string | null
         }
         Insert: {
           campaign_type?: string | null
           client_id: string
           created_at?: string
           id?: string
+          internal_notes?: string | null
           name: string
           onboarding_bdr_notes?: string | null
           onboarding_booking_instructions?: string | null
@@ -136,14 +144,21 @@ export type Database = {
           onboarding_target_timezone?: string | null
           onboarding_unique_differentiator?: string | null
           onboarding_value_proposition?: string | null
+          performance_fee_per_meeting?: number | null
+          performance_start_date?: string | null
           phase?: string
+          quarterly_attended_meeting_guarantee?: number | null
+          sprint_campaign_id?: string | null
           status?: string
+          target?: string | null
+          tier?: string | null
         }
         Update: {
           campaign_type?: string | null
           client_id?: string
           created_at?: string
           id?: string
+          internal_notes?: string | null
           name?: string
           onboarding_bdr_notes?: string | null
           onboarding_booking_instructions?: string | null
@@ -166,8 +181,14 @@ export type Database = {
           onboarding_target_timezone?: string | null
           onboarding_unique_differentiator?: string | null
           onboarding_value_proposition?: string | null
+          performance_fee_per_meeting?: number | null
+          performance_start_date?: string | null
           phase?: string
+          quarterly_attended_meeting_guarantee?: number | null
+          sprint_campaign_id?: string | null
           status?: string
+          target?: string | null
+          tier?: string | null
         }
         Relationships: [
           {
@@ -175,6 +196,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_sprint_campaign_id_fkey"
+            columns: ["sprint_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
         ]

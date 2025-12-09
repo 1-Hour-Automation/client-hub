@@ -10,9 +10,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { ArrowLeft, AlertTriangle, Calendar, Users, Phone, MessageSquare, Clock, Globe, Link, User, CheckCircle, Percent, PhoneCall, Send, ClipboardList } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Calendar, Users, Phone, MessageSquare, Clock, Globe, Link, User, CheckCircle, Percent, PhoneCall, Send, ClipboardList, Rocket } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CampaignOnboardingForm } from '@/components/campaigns/CampaignOnboardingForm';
+import { CreatePerformancePlanModal } from '@/components/campaigns/CreatePerformancePlanModal';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format, startOfQuarter, addDays, startOfMonth, endOfMonth } from 'date-fns';
 
@@ -24,7 +25,15 @@ interface CampaignDetails {
   status: string;
   phase: string;
   campaign_type: string | null;
+  target: string | null;
+  tier: string | null;
+  quarterly_attended_meeting_guarantee: number | null;
+  performance_fee_per_meeting: number | null;
+  performance_start_date: string | null;
+  sprint_campaign_id: string | null;
+  internal_notes: string | null;
   created_at: string;
+  client_id: string;
   onboarding_completed_at: string | null;
   onboarding_target_job_titles: string | null;
   onboarding_industries_to_target: string | null;
@@ -90,6 +99,7 @@ export default function WorkspaceCampaignView() {
   const [isLoading, setIsLoading] = useState(true);
   const [meetingStatusFilter, setMeetingStatusFilter] = useState<MeetingStatusFilter>('all');
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+  const [isPerformanceModalOpen, setIsPerformanceModalOpen] = useState(false);
 
   const handleOnboardingCompleted = useCallback(() => {
     setOnboardingCompleted(true);
@@ -208,18 +218,29 @@ export default function WorkspaceCampaignView() {
       pending: 'outline',
       paused: 'secondary',
       completed: 'secondary',
+      onboarding_required: 'outline',
     };
     return variants[status] || 'default';
   };
 
-  const getPhaseLabel = (status: string): string => {
+  const getPhaseLabel = (phase: string): string => {
     const phases: Record<string, string> = {
-      active: 'Performance Plan',
-      pending: 'Validation Sprint',
-      paused: 'On Hold',
-      completed: 'Completed',
+      sprint: 'Sprint',
+      performance: 'Performance Plan',
+      not_started: 'Not Started',
     };
-    return phases[status] || 'Unknown';
+    return phases[phase] || phase;
+  };
+
+  const getStatusLabel = (status: string): string => {
+    const labels: Record<string, string> = {
+      active: 'Active',
+      pending: 'Pending',
+      paused: 'Paused',
+      completed: 'Completed',
+      onboarding_required: 'Onboarding Required',
+    };
+    return labels[status] || status;
   };
 
   // Meeting metrics for Meetings tab - must be before early returns
@@ -332,9 +353,14 @@ export default function WorkspaceCampaignView() {
             </div>
             <div className="flex items-center gap-2">
               <Badge variant={getStatusVariant(campaign.status)} className="capitalize">
-                {campaign.status}
+                {getStatusLabel(campaign.status)}
               </Badge>
-              <Badge variant="outline">{getPhaseLabel(campaign.status)}</Badge>
+              <Badge variant="outline">{getPhaseLabel(campaign.phase)}</Badge>
+              {campaign.target && (
+                <Badge variant="secondary" className="capitalize">
+                  {campaign.target}
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -373,6 +399,16 @@ export default function WorkspaceCampaignView() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
+            {/* Sprint to Performance Button */}
+            {campaign.phase === 'sprint' && onboardingCompleted && isInternalUser && (
+              <div className="flex justify-end">
+                <Button onClick={() => setIsPerformanceModalOpen(true)} className="gap-2">
+                  <Rocket className="h-4 w-4" />
+                  Mark Sprint Completed / Create Performance Plan
+                </Button>
+              </div>
+            )}
+
             {/* Onboarding Required Banner */}
             {!onboardingCompleted && (
               <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30">
@@ -774,6 +810,15 @@ export default function WorkspaceCampaignView() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Performance Plan Modal */}
+        {campaign && (
+          <CreatePerformancePlanModal
+            open={isPerformanceModalOpen}
+            onOpenChange={setIsPerformanceModalOpen}
+            sprintCampaign={campaign}
+          />
+        )}
       </div>
     </AppLayout>
   );
