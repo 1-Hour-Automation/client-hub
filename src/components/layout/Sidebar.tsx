@@ -47,8 +47,6 @@ export function Sidebar({ items }: SidebarProps) {
 }
 
 export const adminSidebarItems: SidebarItem[] = [
-  { label: 'Campaigns', href: '/admin/campaigns', icon: Megaphone },
-  { label: 'Call Log', href: '/admin/call-log', icon: PhoneCall },
   { label: 'Admin Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { label: 'Clients', href: '/admin/clients', icon: Users },
   { label: 'User Management', href: '/admin/users', icon: UserCog },
@@ -57,6 +55,7 @@ export const adminSidebarItems: SidebarItem[] = [
 export const workspaceSidebarItems = (clientId: string): SidebarItem[] => [
   { label: 'Dashboard', href: `/workspace/${clientId}/dashboard`, icon: LayoutDashboard },
   { label: 'Campaigns', href: `/workspace/${clientId}/campaigns`, icon: Megaphone },
+  { label: 'Call Log', href: `/workspace/${clientId}/call-log`, icon: PhoneCall },
   { label: 'Contacts', href: `/workspace/${clientId}/contacts`, icon: Contact },
   { label: 'Meetings', href: `/workspace/${clientId}/meetings`, icon: Calendar },
 ];

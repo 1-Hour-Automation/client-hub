@@ -14,10 +14,9 @@ import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminClients from "./pages/admin/AdminClients";
 import AdminUsers from "./pages/admin/AdminUsers";
-import AdminCallLog from "./pages/admin/AdminCallLog";
-import AdminCampaigns from "./pages/admin/AdminCampaigns";
 import WorkspaceDashboard from "./pages/workspace/WorkspaceDashboard";
 import WorkspaceCampaigns from "./pages/workspace/WorkspaceCampaigns";
+import WorkspaceCallLog from "./pages/workspace/WorkspaceCallLog";
 import WorkspaceContacts from "./pages/workspace/WorkspaceContacts";
 import WorkspaceMeetings from "./pages/workspace/WorkspaceMeetings";
 import WorkspaceCampaignView from "./pages/workspace/WorkspaceCampaignView";
@@ -43,13 +42,6 @@ const App = () => (
             } />
 
             {/* Admin routes */}
-            <Route path="/admin/campaigns" element={
-              <ProtectedRoute>
-                <AdminGuard>
-                  <AdminCampaigns />
-                </AdminGuard>
-              </ProtectedRoute>
-            } />
             <Route path="/admin/dashboard" element={
               <ProtectedRoute>
                 <AdminGuard>
@@ -68,13 +60,6 @@ const App = () => (
               <ProtectedRoute>
                 <AdminGuard>
                   <AdminUsers />
-                </AdminGuard>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/call-log" element={
-              <ProtectedRoute>
-                <AdminGuard>
-                  <AdminCallLog />
                 </AdminGuard>
               </ProtectedRoute>
             } />
@@ -98,6 +83,13 @@ const App = () => (
               <ProtectedRoute>
                 <WorkspaceGuard>
                   <WorkspaceCampaignView />
+                </WorkspaceGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/workspace/:clientId/call-log" element={
+              <ProtectedRoute>
+                <WorkspaceGuard>
+                  <WorkspaceCallLog />
                 </WorkspaceGuard>
               </ProtectedRoute>
             } />
