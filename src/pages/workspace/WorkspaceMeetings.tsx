@@ -8,8 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
   DialogContent,
@@ -27,8 +25,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { NotificationsTab, useNotificationCount } from '@/components/dashboard/NotificationsTab';
-import { Plus, Calendar, Bell, AlertTriangle } from 'lucide-react';
+import { Plus, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface MeetingRow {
@@ -62,7 +59,6 @@ export default function WorkspaceMeetings() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('meetings');
   const [newMeeting, setNewMeeting] = useState({
     title: '',
     contact_id: '',
@@ -72,8 +68,6 @@ export default function WorkspaceMeetings() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  
-  const actionRequiredCount = useNotificationCount(clientId || '');
 
   async function fetchData() {
     if (!clientId) return;
@@ -207,10 +201,10 @@ export default function WorkspaceMeetings() {
           <div>
             <h1 className="text-2xl font-semibold text-foreground">Meetings</h1>
             <p className="text-muted-foreground mt-1">
-              View scheduled meetings and notifications.
+              View scheduled meetings booked by our team.
             </p>
           </div>
-          {isInternalUser && activeTab === 'meetings' && (
+          {isInternalUser && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
@@ -303,66 +297,26 @@ export default function WorkspaceMeetings() {
           )}
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="meetings">
-              <Calendar className="h-4 w-4 mr-1.5" />
-              Meetings
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="relative">
-              <Bell className="h-4 w-4 mr-1.5" />
-              Notifications
-              {actionRequiredCount > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="ml-2 h-5 min-w-5 px-1.5 text-xs"
-                >
-                  {actionRequiredCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="meetings" className="mt-6">
-            {actionRequiredCount > 0 && (
-              <Alert 
-                className="mb-6 bg-amber-500/10 border-amber-500/30 cursor-pointer hover:bg-amber-500/15 transition-colors"
-                onClick={() => setActiveTab('notifications')}
-              >
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-                <AlertDescription className="text-amber-700">
-                  You have {actionRequiredCount} item{actionRequiredCount > 1 ? 's' : ''} needing your attention.{' '}
-                  <span className="underline font-medium">View them in Notifications.</span>
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            <DataTable
-              columns={columns}
-              data={meetings}
-              isLoading={isLoading}
-              emptyState={
-                <EmptyState
-                  icon={Calendar}
-                  title="No meetings yet"
-                  description="Book your first meeting to start tracking scheduled calls."
-                  action={
-                    isInternalUser ? (
-                      <Button onClick={() => setIsDialogOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Meeting
-                      </Button>
-                    ) : undefined
-                  }
-                />
+        <DataTable
+          columns={columns}
+          data={meetings}
+          isLoading={isLoading}
+          emptyState={
+            <EmptyState
+              icon={Calendar}
+              title="No meetings yet"
+              description="Book your first meeting to start tracking scheduled calls."
+              action={
+                isInternalUser ? (
+                  <Button onClick={() => setIsDialogOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Meeting
+                  </Button>
+                ) : undefined
               }
             />
-          </TabsContent>
-
-          <TabsContent value="notifications" className="mt-6">
-            <NotificationsTab clientId={clientId!} />
-          </TabsContent>
-        </Tabs>
+          }
+        />
       </div>
     </AppLayout>
   );

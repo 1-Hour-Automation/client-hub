@@ -20,6 +20,7 @@ import WorkspaceCallLog from "./pages/workspace/WorkspaceCallLog";
 import WorkspaceContacts from "./pages/workspace/WorkspaceContacts";
 import WorkspaceMeetings from "./pages/workspace/WorkspaceMeetings";
 import WorkspaceCampaignView from "./pages/workspace/WorkspaceCampaignView";
+import WorkspaceNotifications from "./pages/workspace/WorkspaceNotifications";
 
 const queryClient = new QueryClient();
 
@@ -104,6 +105,13 @@ const App = () => (
               <ProtectedRoute>
                 <WorkspaceGuard>
                   <WorkspaceMeetings />
+                </WorkspaceGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/workspace/:clientId/notifications" element={
+              <ProtectedRoute>
+                <WorkspaceGuard>
+                  <WorkspaceNotifications />
                 </WorkspaceGuard>
               </ProtectedRoute>
             } />
