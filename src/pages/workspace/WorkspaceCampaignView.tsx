@@ -1,0 +1,520 @@
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { AppLayout } from '@/components/layout/AppLayout';
+import { workspaceSidebarItems } from '@/components/layout/Sidebar';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { ArrowLeft, AlertTriangle, Calendar, Users, Phone, MessageSquare, Clock, Globe, Link, User } from 'lucide-react';
+import { format, startOfQuarter, addDays, startOfMonth, endOfMonth } from 'date-fns';
+
+interface CampaignDetails {
+  id: string;
+  name: string;
+  status: string;
+  created_at: string;
+}
+
+interface CampaignMetrics {
+  attendedMeetings: number;
+  bookedMeetings: number;
+  connectRate: number;
+  positiveConversations: number;
+  totalContacts: number;
+  totalDials: number;
+  conversionRate: number;
+}
+
+interface Meeting {
+  id: string;
+  title: string;
+  status: string;
+  scheduled_for: string | null;
+  contact_name?: string;
+}
+
+export default function WorkspaceCampaignView() {
+  const { clientId, campaignId } = useParams<{ clientId: string; campaignId: string }>();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const [clientName, setClientName] = useState('');
+  const [campaign, setCampaign] = useState<CampaignDetails | null>(null);
+  const [metrics, setMetrics] = useState<CampaignMetrics | null>(null);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      if (!clientId || !campaignId) return;
+
+      try {
+        // Fetch client name
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('name')
+          .eq('id', clientId)
+          .maybeSingle();
+        
+        if (clientData) setClientName(clientData.name);
+
+        // Fetch campaign details
+        const { data: campaignData, error: campaignError } = await supabase
+          .from('campaigns')
+          .select('*')
+          .eq('id', campaignId)
+          .eq('client_id', clientId)
+          .maybeSingle();
+
+        if (campaignError) throw campaignError;
+        if (!campaignData) {
+          toast({ title: 'Campaign not found', variant: 'destructive' });
+          navigate(`/workspace/${clientId}/campaigns`);
+          return;
+        }
+
+        setCampaign(campaignData);
+
+        // Fetch metrics
+        const quarterStart = startOfQuarter(new Date());
+        const next7Days = addDays(new Date(), 7);
+        const monthStart = startOfMonth(new Date());
+        const monthEnd = endOfMonth(new Date());
+
+        // Attended meetings this quarter
+        const { count: attendedCount } = await supabase
+          .from('meetings')
+          .select('id', { count: 'exact', head: true })
+          .eq('campaign_id', campaignId)
+          .eq('status', 'attended')
+          .gte('scheduled_for', quarterStart.toISOString());
+
+        // Booked/upcoming meetings
+        const { count: bookedCount } = await supabase
+          .from('meetings')
+          .select('id', { count: 'exact', head: true })
+          .eq('campaign_id', campaignId)
+          .neq('status', 'cancelled')
+          .gte('scheduled_for', new Date().toISOString())
+          .lte('scheduled_for', next7Days.toISOString());
+
+        // Total contacts for this campaign
+        const { count: contactCount } = await supabase
+          .from('contacts')
+          .select('id', { count: 'exact', head: true })
+          .eq('campaign_id', campaignId);
+
+        // Fetch all meetings for this campaign
+        const { data: meetingsData } = await supabase
+          .from('meetings')
+          .select('id, title, status, scheduled_for, contact_id')
+          .eq('campaign_id', campaignId)
+          .order('scheduled_for', { ascending: false });
+
+        setMeetings(meetingsData || []);
+
+        // Calculate derived metrics (placeholders for MVP)
+        const totalContacts = contactCount ?? 0;
+        const totalDials = Math.floor(totalContacts * 2.5); // Placeholder
+        const positiveConversations = Math.floor((attendedCount ?? 0) * 0.6); // Placeholder
+        const connectRate = totalDials > 0 ? Math.round((totalContacts / totalDials) * 100) : 0;
+        const conversionRate = totalContacts > 0 ? Math.round(((attendedCount ?? 0) / totalContacts) * 100) : 0;
+
+        setMetrics({
+          attendedMeetings: attendedCount ?? 0,
+          bookedMeetings: bookedCount ?? 0,
+          connectRate,
+          positiveConversations,
+          totalContacts,
+          totalDials,
+          conversionRate,
+        });
+
+      } catch (error) {
+        console.error('Failed to fetch campaign:', error);
+        toast({ title: 'Error loading campaign', variant: 'destructive' });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchData();
+  }, [clientId, campaignId, navigate, toast]);
+
+  const getStatusVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+      active: 'default',
+      pending: 'outline',
+      paused: 'secondary',
+      completed: 'secondary',
+    };
+    return variants[status] || 'default';
+  };
+
+  const getPhaseLabel = (status: string): string => {
+    const phases: Record<string, string> = {
+      active: 'Performance Plan',
+      pending: 'Validation Sprint',
+      paused: 'On Hold',
+      completed: 'Completed',
+    };
+    return phases[status] || 'Unknown';
+  };
+
+  if (isLoading) {
+    return (
+      <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName}>
+        <div className="space-y-6 animate-fade-in">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-24 w-full" />
+          <div className="grid grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24" />)}
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!campaign) return null;
+
+  const upcomingMeetings = meetings.filter(m => 
+    m.scheduled_for && new Date(m.scheduled_for) >= new Date() && m.status !== 'cancelled'
+  );
+  const pastMeetings = meetings.filter(m => 
+    m.scheduled_for && new Date(m.scheduled_for) < new Date()
+  );
+
+  return (
+    <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName}>
+      <div className="space-y-6 animate-fade-in">
+        {/* Header */}
+        <div className="space-y-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(`/workspace/${clientId}/campaigns`)}
+            className="gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Campaigns
+          </Button>
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-semibold text-foreground">{campaign.name}</h1>
+              <p className="text-sm text-muted-foreground">
+                Created {format(new Date(campaign.created_at), 'MMMM d, yyyy')}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant={getStatusVariant(campaign.status)} className="capitalize">
+                {campaign.status}
+              </Badge>
+              <Badge variant="outline">{getPhaseLabel(campaign.status)}</Badge>
+            </div>
+          </div>
+        </div>
+
+        {/* Pending Banner */}
+        {campaign.status === 'pending' && (
+          <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
+            <CardContent className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+                <div>
+                  <p className="font-medium text-amber-900 dark:text-amber-100">Campaign Requires Action</p>
+                  <p className="text-sm text-amber-700 dark:text-amber-300">Reason: Script approval needed</p>
+                </div>
+              </div>
+              <Button size="sm" variant="outline" className="border-amber-600 text-amber-700 hover:bg-amber-100">
+                Review Script
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Tabs */}
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="meetings">Meetings</TabsTrigger>
+            <TabsTrigger value="script">Script & Playbook</TabsTrigger>
+            <TabsTrigger value="data">Data & ICP</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            {/* Core KPI Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Calendar className="h-4 w-4" />
+                    <span className="text-xs">Attended (Quarter)</span>
+                  </div>
+                  <p className="text-2xl font-semibold">{metrics?.attendedMeetings ?? 0}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Clock className="h-4 w-4" />
+                    <span className="text-xs">Booked (Upcoming)</span>
+                  </div>
+                  <p className="text-2xl font-semibold">{metrics?.bookedMeetings ?? 0}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Phone className="h-4 w-4" />
+                    <span className="text-xs">Connect Rate</span>
+                  </div>
+                  <p className="text-2xl font-semibold">{metrics?.connectRate ?? 0}%</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <MessageSquare className="h-4 w-4" />
+                    <span className="text-xs">Positive Convos</span>
+                  </div>
+                  <p className="text-2xl font-semibold">{metrics?.positiveConversations ?? 0}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Two Main Boxes */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Calling Performance Metrics */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Calling Performance Metrics</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Total Contacts Reached</span>
+                    <span className="font-medium">{metrics?.totalContacts ?? 0}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Total Dials Attempted</span>
+                    <span className="font-medium">{metrics?.totalDials ?? 0}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Positive Conversations</span>
+                    <span className="font-medium">{metrics?.positiveConversations ?? 0}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Connect Rate</span>
+                    <span className="font-medium">{metrics?.connectRate ?? 0}%</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Conversion Rate</span>
+                    <span className="font-medium">{metrics?.conversionRate ?? 0}%</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Campaign Schedule */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Calling Schedule</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-3 text-sm">
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <span className="text-muted-foreground">Target Timezone</span>
+                      <p className="font-medium">Eastern Time (ET)</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <span className="text-muted-foreground">Calling Hours</span>
+                      <p className="font-medium">9:00 AM – 5:00 PM</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Link className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <span className="text-muted-foreground">Scheduling Link</span>
+                      <p className="font-medium text-primary">calendly.com/client</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <span className="text-muted-foreground">BDR Assigned</span>
+                      <p className="font-medium">Not assigned</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="meetings" className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Upcoming Meetings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Upcoming Meetings ({upcomingMeetings.length})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {upcomingMeetings.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No upcoming meetings scheduled.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {upcomingMeetings.slice(0, 5).map(meeting => (
+                        <div key={meeting.id} className="flex items-center justify-between text-sm border-b pb-2 last:border-0">
+                          <div>
+                            <p className="font-medium">{meeting.title}</p>
+                            <p className="text-muted-foreground text-xs">
+                              {meeting.scheduled_for && format(new Date(meeting.scheduled_for), 'MMM d, h:mm a')}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="capitalize text-xs">{meeting.status}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Past Meetings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Past Meetings ({pastMeetings.length})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {pastMeetings.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No past meetings yet.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {pastMeetings.slice(0, 5).map(meeting => (
+                        <div key={meeting.id} className="flex items-center justify-between text-sm border-b pb-2 last:border-0">
+                          <div>
+                            <p className="font-medium">{meeting.title}</p>
+                            <p className="text-muted-foreground text-xs">
+                              {meeting.scheduled_for && format(new Date(meeting.scheduled_for), 'MMM d, yyyy')}
+                            </p>
+                          </div>
+                          <Badge 
+                            variant={meeting.status === 'attended' ? 'default' : meeting.status === 'cancelled' ? 'destructive' : 'secondary'}
+                            className="capitalize text-xs"
+                          >
+                            {meeting.status === 'no-show' ? 'No-Show' : meeting.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="script" className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Cold Calling Script</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Script content will be displayed here. This is a placeholder for the MVP.
+                    Contact your account manager to update the script.
+                  </p>
+                  {campaign.status === 'pending' && (
+                    <Button className="mt-4" size="sm">Approve Script</Button>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Objection Handling</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Common objections and recommended responses will appear here.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Booking Instructions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Instructions for booking meetings and qualification criteria.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Client Notes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Additional notes from the client about this campaign.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="data" className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">ICP Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Target Roles</span>
+                    <p className="font-medium">VP Sales, Director of Operations, CEO</p>
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Industries</span>
+                    <p className="font-medium">Technology, Healthcare, Finance</p>
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Geographies</span>
+                    <p className="font-medium">United States, Canada</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Data Overview</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Total Contacts</span>
+                    <span className="font-medium">{metrics?.totalContacts ?? 0}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Verified Dials</span>
+                    <span className="font-medium">85%</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Data Source</span>
+                    <span className="font-medium">ZoomInfo</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </AppLayout>
+  );
+}
