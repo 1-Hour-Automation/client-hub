@@ -9,7 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, AlertTriangle, Calendar, Users, Phone, MessageSquare, Clock, Globe, Link, User, CheckCircle, Percent } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Calendar, Users, Phone, MessageSquare, Clock, Globe, Link, User, CheckCircle, Percent, PhoneCall } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format, startOfQuarter, addDays, startOfMonth, endOfMonth } from 'date-fns';
 
 type MeetingStatusFilter = 'all' | 'scheduled' | 'attended' | 'no-show' | 'cancelled' | 'rescheduled';
@@ -39,6 +40,16 @@ interface Meeting {
   contact_name?: string;
 }
 
+interface CallLog {
+  id: string;
+  contact_name: string;
+  company: string | null;
+  phone_number: string;
+  disposition: string;
+  call_time: string;
+  notes: string | null;
+}
+
 export default function WorkspaceCampaignView() {
   const { clientId, campaignId } = useParams<{ clientId: string; campaignId: string }>();
   const navigate = useNavigate();
@@ -48,6 +59,7 @@ export default function WorkspaceCampaignView() {
   const [campaign, setCampaign] = useState<CampaignDetails | null>(null);
   const [metrics, setMetrics] = useState<CampaignMetrics | null>(null);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [callLogs, setCallLogs] = useState<CallLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [meetingStatusFilter, setMeetingStatusFilter] = useState<MeetingStatusFilter>('all');
 
@@ -119,6 +131,15 @@ export default function WorkspaceCampaignView() {
           .order('scheduled_for', { ascending: false });
 
         setMeetings(meetingsData || []);
+
+        // Fetch call logs for this campaign
+        const { data: callLogsData } = await supabase
+          .from('call_logs')
+          .select('id, contact_name, company, phone_number, disposition, call_time, notes')
+          .eq('campaign_id', campaignId)
+          .order('call_time', { ascending: false });
+
+        setCallLogs(callLogsData || []);
 
         // Calculate derived metrics (placeholders for MVP)
         const totalContacts = contactCount ?? 0;
@@ -224,6 +245,20 @@ export default function WorkspaceCampaignView() {
     return labels[status] || status;
   };
 
+  const getDispositionBadgeVariant = (disposition: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+      'Connected': 'default',
+      'Positive Conversation': 'default',
+      'No Answer': 'outline',
+      'Voicemail': 'outline',
+      'Call Back Requested': 'secondary',
+      'Not Interested': 'secondary',
+      'Bad Number': 'destructive',
+      'Do Not Call': 'destructive',
+    };
+    return variants[disposition] || 'outline';
+  };
+
   if (isLoading) {
     return (
       <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName}>
@@ -296,6 +331,7 @@ export default function WorkspaceCampaignView() {
             <TabsTrigger value="meetings">Meetings</TabsTrigger>
             <TabsTrigger value="script">Script & Playbook</TabsTrigger>
             <TabsTrigger value="data">Data & ICP</TabsTrigger>
+            <TabsTrigger value="calllog">Call Log</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -598,6 +634,59 @@ export default function WorkspaceCampaignView() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="calllog" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <PhoneCall className="h-5 w-5 text-muted-foreground" />
+                  <CardTitle className="text-base">Call Log ({callLogs.length} calls)</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {callLogs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    No calls have been logged for this campaign yet.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Contact Name</TableHead>
+                          <TableHead>Company</TableHead>
+                          <TableHead>Phone Number</TableHead>
+                          <TableHead>Disposition</TableHead>
+                          <TableHead>Call Time</TableHead>
+                          <TableHead>Notes</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {callLogs.map(log => (
+                          <TableRow key={log.id}>
+                            <TableCell className="font-medium">{log.contact_name}</TableCell>
+                            <TableCell className="text-muted-foreground">{log.company || '—'}</TableCell>
+                            <TableCell>{log.phone_number}</TableCell>
+                            <TableCell>
+                              <Badge variant={getDispositionBadgeVariant(log.disposition)} className="text-xs">
+                                {log.disposition}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">
+                              {format(new Date(log.call_time), 'MMM d, yyyy h:mm a')}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate">
+                              {log.notes || '—'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
