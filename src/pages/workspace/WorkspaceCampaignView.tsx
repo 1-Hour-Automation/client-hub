@@ -7,10 +7,26 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { ArrowLeft, AlertTriangle, Calendar, Users, Phone, MessageSquare, Clock, Globe, Link, User, CheckCircle, Percent, PhoneCall, Send, ClipboardList, Rocket } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Calendar, Users, Phone, MessageSquare, Clock, Globe, Link, User, CheckCircle, Percent, PhoneCall, Send, ClipboardList, Rocket, MoreHorizontal, Copy, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CampaignOnboardingForm } from '@/components/campaigns/CampaignOnboardingForm';
 import { CreatePerformancePlanModal } from '@/components/campaigns/CreatePerformancePlanModal';
@@ -100,6 +116,12 @@ export default function WorkspaceCampaignView() {
   const [meetingStatusFilter, setMeetingStatusFilter] = useState<MeetingStatusFilter>('all');
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [isPerformanceModalOpen, setIsPerformanceModalOpen] = useState(false);
+  
+  // Delete/Duplicate state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
 
   const handleOnboardingCompleted = useCallback(() => {
     setOnboardingCompleted(true);
@@ -313,6 +335,90 @@ export default function WorkspaceCampaignView() {
     return variants[disposition] || 'outline';
   };
 
+  async function handleDeleteCampaign() {
+    if (!campaignId) return;
+    
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', campaignId);
+
+      if (error) throw error;
+
+      toast({ title: 'Campaign deleted', description: `${campaign?.name} has been removed.` });
+      setDeleteDialogOpen(false);
+      navigate(`/workspace/${clientId}/campaigns`);
+    } catch (error) {
+      console.error('Failed to delete campaign:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete campaign. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  async function handleDuplicateCampaign() {
+    if (!campaignId || !clientId || !campaign) return;
+
+    setIsDuplicating(true);
+    try {
+      const { data: newCampaign, error: insertError } = await supabase
+        .from('campaigns')
+        .insert({
+          client_id: clientId,
+          name: `${campaign.name} (Copy)`,
+          status: 'onboarding_required',
+          phase: campaign.phase,
+          campaign_type: campaign.campaign_type,
+          target: campaign.target,
+          tier: campaign.tier,
+          onboarding_target_job_titles: campaign.onboarding_target_job_titles,
+          onboarding_industries_to_target: campaign.onboarding_industries_to_target,
+          onboarding_company_size_range: campaign.onboarding_company_size_range,
+          onboarding_required_skills: campaign.onboarding_required_skills,
+          onboarding_locations_to_target: campaign.onboarding_locations_to_target,
+          onboarding_excluded_industries: campaign.onboarding_excluded_industries,
+          onboarding_example_ideal_companies: campaign.onboarding_example_ideal_companies,
+          onboarding_value_proposition: campaign.onboarding_value_proposition,
+          onboarding_key_pain_points: campaign.onboarding_key_pain_points,
+          onboarding_unique_differentiator: campaign.onboarding_unique_differentiator,
+          onboarding_example_messaging: campaign.onboarding_example_messaging,
+          onboarding_common_objections: campaign.onboarding_common_objections,
+          onboarding_recommended_responses: campaign.onboarding_recommended_responses,
+          onboarding_compliance_notes: campaign.onboarding_compliance_notes,
+          onboarding_qualified_prospect_definition: campaign.onboarding_qualified_prospect_definition,
+          onboarding_disqualifying_factors: campaign.onboarding_disqualifying_factors,
+          onboarding_scheduling_link: campaign.onboarding_scheduling_link,
+          onboarding_target_timezone: campaign.onboarding_target_timezone,
+          onboarding_booking_instructions: campaign.onboarding_booking_instructions,
+          onboarding_bdr_notes: campaign.onboarding_bdr_notes,
+          onboarding_completed_at: campaign.onboarding_completed_at,
+        })
+        .select('id')
+        .single();
+
+      if (insertError || !newCampaign) throw insertError || new Error('Failed to create duplicate');
+
+      toast({ title: 'Campaign duplicated', description: `${campaign.name} (Copy) has been created.` });
+      setDuplicateDialogOpen(false);
+      navigate(`/workspace/${clientId}/campaigns/${newCampaign.id}`);
+    } catch (error) {
+      console.error('Failed to duplicate campaign:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to duplicate campaign. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDuplicating(false);
+    }
+  }
+
   if (isLoading) {
     return (
       <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName}>
@@ -360,6 +466,29 @@ export default function WorkspaceCampaignView() {
                 <Badge variant="secondary" className="capitalize">
                   {campaign.target}
                 </Badge>
+              )}
+              {isInternalUser && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreHorizontal className="h-4 w-4" />
+                      <span className="sr-only">More actions</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-background">
+                    <DropdownMenuItem onClick={() => setDuplicateDialogOpen(true)}>
+                      <Copy className="mr-2 h-4 w-4" />
+                      Duplicate campaign
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setDeleteDialogOpen(true)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete campaign
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
             </div>
           </div>
@@ -819,6 +948,46 @@ export default function WorkspaceCampaignView() {
             sprintCampaign={campaign}
           />
         )}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete campaign?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will remove the campaign from your active view. Contacts and meetings will remain in the system, but this campaign will no longer appear in your list.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDeleteCampaign} 
+                disabled={isDeleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete campaign'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Duplicate Confirmation Dialog */}
+        <AlertDialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Duplicate campaign?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will create a new campaign with the same configuration as this one. Contacts and meetings will not be copied.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDuplicating}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDuplicateCampaign} disabled={isDuplicating}>
+                {isDuplicating ? 'Duplicating...' : 'Duplicate campaign'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AppLayout>
   );
