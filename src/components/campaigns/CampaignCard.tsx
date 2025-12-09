@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, Phone } from 'lucide-react';
 
 interface CampaignCardProps {
   campaign: {
@@ -40,57 +39,50 @@ export function CampaignCard({ campaign, clientId }: CampaignCardProps) {
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-5">
-        <div className="space-y-4">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-4">
-            <h3 className="text-lg font-semibold text-foreground line-clamp-1">{campaign.name}</h3>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Badge variant={getStatusVariant(campaign.status)} className="capitalize">
+    <Card className="w-full hover:shadow-md transition-shadow border">
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          {/* Left Section: Name + Badges */}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-semibold text-foreground truncate mb-2">
+              {campaign.name}
+            </h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className="text-xs font-normal">
+                {getPhaseLabel(campaign.status)}
+              </Badge>
+              <Badge variant={getStatusVariant(campaign.status)} className="capitalize text-xs">
                 {campaign.status}
               </Badge>
             </div>
           </div>
 
-          {/* Phase Badge */}
-          <Badge variant="outline" className="text-xs">
-            {getPhaseLabel(campaign.status)}
-          </Badge>
-
-          {/* Metrics */}
-          <div className="grid grid-cols-3 gap-3 pt-2">
-            <div className="text-center p-2 bg-muted/50 rounded-md">
-              <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
-                <Calendar className="h-3 w-3" />
-              </div>
-              <p className="text-lg font-semibold">{campaign.attendedMeetings}</p>
+          {/* Middle Section: Metrics */}
+          <div className="flex items-center gap-6 sm:gap-8 text-sm flex-wrap sm:flex-nowrap">
+            <div className="text-center min-w-[60px]">
+              <p className="text-lg font-semibold text-foreground">{campaign.attendedMeetings}</p>
               <p className="text-xs text-muted-foreground">Attended</p>
             </div>
-            <div className="text-center p-2 bg-muted/50 rounded-md">
-              <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
-                <Clock className="h-3 w-3" />
-              </div>
-              <p className="text-lg font-semibold">{campaign.upcomingMeetings}</p>
+            <div className="text-center min-w-[60px]">
+              <p className="text-lg font-semibold text-foreground">{campaign.upcomingMeetings}</p>
               <p className="text-xs text-muted-foreground">Upcoming</p>
             </div>
-            <div className="text-center p-2 bg-muted/50 rounded-md">
-              <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
-                <Phone className="h-3 w-3" />
-              </div>
-              <p className="text-lg font-semibold">{campaign.connectRate}%</p>
+            <div className="text-center min-w-[60px]">
+              <p className="text-lg font-semibold text-foreground">{campaign.connectRate}%</p>
               <p className="text-xs text-muted-foreground">Connect</p>
             </div>
           </div>
 
-          {/* View Button */}
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={() => navigate(`/workspace/${clientId}/campaigns/${campaign.id}`)}
-          >
-            View Campaign
-          </Button>
+          {/* Right Section: View Button */}
+          <div className="flex-shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/workspace/${clientId}/campaigns/${campaign.id}`)}
+            >
+              View Campaign
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

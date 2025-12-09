@@ -27,7 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Plus, Megaphone } from 'lucide-react';
-import { startOfQuarter, addDays, startOfMonth, endOfMonth } from 'date-fns';
+import { startOfQuarter, addDays } from 'date-fns';
 
 interface CampaignWithMetrics {
   id: string;
@@ -38,6 +38,13 @@ interface CampaignWithMetrics {
   upcomingMeetings: number;
   connectRate: number;
 }
+
+const STATUS_ORDER: Record<string, number> = {
+  active: 0,
+  pending: 1,
+  paused: 2,
+  completed: 3,
+};
 
 export default function WorkspaceCampaigns() {
   const { clientId } = useParams<{ clientId: string }>();
@@ -55,7 +62,6 @@ export default function WorkspaceCampaigns() {
     if (!clientId) return;
 
     try {
-      // Fetch client name
       const { data: clientData } = await supabase
         .from('clients')
         .select('name')
@@ -64,7 +70,6 @@ export default function WorkspaceCampaigns() {
 
       if (clientData) setClientName(clientData.name);
 
-      // Fetch campaigns
       const { data: campaignsData, error } = await supabase
         .from('campaigns')
         .select('id, name, status, created_at')
@@ -75,12 +80,9 @@ export default function WorkspaceCampaigns() {
 
       const quarterStart = startOfQuarter(new Date());
       const next7Days = addDays(new Date(), 7);
-      const monthStart = startOfMonth(new Date());
 
-      // Fetch metrics for each campaign
       const campaignsWithMetrics = await Promise.all(
         (campaignsData || []).map(async (campaign) => {
-          // Attended meetings this quarter
           const { count: attendedCount } = await supabase
             .from('meetings')
             .select('id', { count: 'exact', head: true })
@@ -88,7 +90,6 @@ export default function WorkspaceCampaigns() {
             .eq('status', 'attended')
             .gte('scheduled_for', quarterStart.toISOString());
 
-          // Upcoming meetings (next 7 days)
           const { count: upcomingCount } = await supabase
             .from('meetings')
             .select('id', { count: 'exact', head: true })
@@ -97,13 +98,11 @@ export default function WorkspaceCampaigns() {
             .gte('scheduled_for', new Date().toISOString())
             .lte('scheduled_for', next7Days.toISOString());
 
-          // Contact count for connect rate calculation
           const { count: contactCount } = await supabase
             .from('contacts')
             .select('id', { count: 'exact', head: true })
             .eq('campaign_id', campaign.id);
 
-          // Placeholder connect rate calculation
           const contacts = contactCount ?? 0;
           const connectRate = contacts > 0 ? Math.min(Math.round((contacts * 0.15) * 10), 100) : 0;
 
@@ -163,15 +162,26 @@ export default function WorkspaceCampaigns() {
     }
   }
 
-  const filteredCampaigns = useMemo(() => {
-    if (activeFilter === 'all') return campaigns;
-    return campaigns.filter(c => c.status === activeFilter);
+  const filteredAndSortedCampaigns = useMemo(() => {
+    let filtered = campaigns;
+    
+    if (activeFilter !== 'all') {
+      filtered = campaigns.filter(c => c.status === activeFilter);
+    }
+
+    // Sort: by status order first, then by created_at descending
+    return [...filtered].sort((a, b) => {
+      const statusDiff = (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
+      if (statusDiff !== 0) return statusDiff;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
   }, [campaigns, activeFilter]);
 
   return (
     <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName}>
-      <div className="space-y-6 animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="space-y-6 animate-fade-in w-full">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">Campaigns</h1>
             <p className="text-muted-foreground mt-1">
@@ -181,7 +191,7 @@ export default function WorkspaceCampaigns() {
           {isInternalUser && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="flex-shrink-0">
                   <Plus className="mr-2 h-4 w-4" />
                   Create Campaign
                 </Button>
@@ -227,23 +237,24 @@ export default function WorkspaceCampaigns() {
           )}
         </div>
 
-        {/* Filters */}
+        {/* Filter Tabs */}
         <CampaignFilters activeFilter={activeFilter} onFilterChange={setActiveFilter} />
 
-        {/* Campaign Cards */}
+        {/* Campaign List */}
         {isLoading ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-64 rounded-lg" />
+          <div className="space-y-3">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-20 w-full rounded-lg" />
             ))}
           </div>
-        ) : filteredCampaigns.length === 0 ? (
+        ) : filteredAndSortedCampaigns.length === 0 ? (
           <EmptyState
             icon={Megaphone}
             title={activeFilter === 'all' ? 'No campaigns yet' : `No ${activeFilter} campaigns`}
-            description={activeFilter === 'all' 
-              ? 'Create your first campaign to start tracking activity.'
-              : `There are no campaigns with ${activeFilter} status.`
+            description={
+              activeFilter === 'all'
+                ? 'Create your first cold calling campaign to get started.'
+                : `There are no campaigns with ${activeFilter} status.`
             }
             action={
               isInternalUser && activeFilter === 'all' ? (
@@ -255,13 +266,9 @@ export default function WorkspaceCampaigns() {
             }
           />
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredCampaigns.map((campaign) => (
-              <CampaignCard 
-                key={campaign.id} 
-                campaign={campaign} 
-                clientId={clientId!} 
-              />
+          <div className="space-y-3">
+            {filteredAndSortedCampaigns.map((campaign) => (
+              <CampaignCard key={campaign.id} campaign={campaign} clientId={clientId!} />
             ))}
           </div>
         )}
