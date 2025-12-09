@@ -328,6 +328,69 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string
+          campaign_id: string | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          requires_client_action: boolean
+          resolved_at: string | null
+          severity: string
+          status: string
+          title: string
+          type: string
+          visible_to_client: boolean
+        }
+        Insert: {
+          body: string
+          campaign_id?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          requires_client_action?: boolean
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          title: string
+          type: string
+          visible_to_client?: boolean
+        }
+        Update: {
+          body?: string
+          campaign_id?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          requires_client_action?: boolean
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          title?: string
+          type?: string
+          visible_to_client?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profiles: {
         Row: {
           client_id: string | null
