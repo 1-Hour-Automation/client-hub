@@ -83,6 +83,7 @@ export type Database = {
           campaign_type: string | null
           client_id: string
           created_at: string
+          deleted_at: string | null
           id: string
           internal_notes: string | null
           name: string
@@ -120,6 +121,7 @@ export type Database = {
           campaign_type?: string | null
           client_id: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           internal_notes?: string | null
           name: string
@@ -157,6 +159,7 @@ export type Database = {
           campaign_type?: string | null
           client_id?: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           internal_notes?: string | null
           name?: string
