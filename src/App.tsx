@@ -3,8 +3,20 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/guards/ProtectedRoute";
+import { AdminGuard, WorkspaceGuard } from "@/components/guards/RoleGuard";
+
+// Pages
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminClients from "./pages/admin/AdminClients";
+import WorkspaceDashboard from "./pages/workspace/WorkspaceDashboard";
+import WorkspaceCampaigns from "./pages/workspace/WorkspaceCampaigns";
+import WorkspaceContacts from "./pages/workspace/WorkspaceContacts";
+import WorkspaceMeetings from "./pages/workspace/WorkspaceMeetings";
 
 const queryClient = new QueryClient();
 
@@ -14,11 +26,68 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/auth" element={<Auth />} />
+            
+            {/* Protected index - handles role-based redirect */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            } />
+
+            {/* Admin routes */}
+            <Route path="/admin/dashboard" element={
+              <ProtectedRoute>
+                <AdminGuard>
+                  <AdminDashboard />
+                </AdminGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/clients" element={
+              <ProtectedRoute>
+                <AdminGuard>
+                  <AdminClients />
+                </AdminGuard>
+              </ProtectedRoute>
+            } />
+
+            {/* Workspace routes */}
+            <Route path="/workspace/:clientId/dashboard" element={
+              <ProtectedRoute>
+                <WorkspaceGuard>
+                  <WorkspaceDashboard />
+                </WorkspaceGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/workspace/:clientId/campaigns" element={
+              <ProtectedRoute>
+                <WorkspaceGuard>
+                  <WorkspaceCampaigns />
+                </WorkspaceGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/workspace/:clientId/contacts" element={
+              <ProtectedRoute>
+                <WorkspaceGuard>
+                  <WorkspaceContacts />
+                </WorkspaceGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/workspace/:clientId/meetings" element={
+              <ProtectedRoute>
+                <WorkspaceGuard>
+                  <WorkspaceMeetings />
+                </WorkspaceGuard>
+              </ProtectedRoute>
+            } />
+
+            {/* Catch-all */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
