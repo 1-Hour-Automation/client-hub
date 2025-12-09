@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 type FilterStatus = 'all' | 'active' | 'pending' | 'paused' | 'completed';
 
@@ -19,14 +19,18 @@ export function CampaignFilters({ activeFilter, onFilterChange }: CampaignFilter
   return (
     <div className="flex flex-wrap gap-2">
       {filters.map((filter) => (
-        <Button
+        <button
           key={filter.value}
-          variant={activeFilter === filter.value ? 'default' : 'outline'}
-          size="sm"
           onClick={() => onFilterChange(filter.value)}
+          className={cn(
+            'px-4 py-1.5 text-sm font-medium rounded-full transition-colors',
+            activeFilter === filter.value
+              ? 'bg-primary text-primary-foreground'
+              : 'border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
+          )}
         >
           {filter.label}
-        </Button>
+        </button>
       ))}
     </div>
   );
