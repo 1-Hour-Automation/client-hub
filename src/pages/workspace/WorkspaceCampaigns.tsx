@@ -54,7 +54,7 @@ export default function WorkspaceCampaigns() {
   const [campaigns, setCampaigns] = useState<CampaignWithMetrics[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newCampaign, setNewCampaign] = useState({ name: '', campaignType: '' });
+  const [newCampaign, setNewCampaign] = useState({ name: '', target: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
   const { toast } = useToast();
@@ -144,8 +144,8 @@ export default function WorkspaceCampaigns() {
         .insert({
           name: newCampaign.name.trim(),
           status: 'onboarding_required',
-          phase: 'not_started',
-          campaign_type: newCampaign.campaignType.trim() || null,
+          phase: 'sprint',
+          target: newCampaign.target || null,
           client_id: clientId,
         })
         .select('id')
@@ -154,7 +154,7 @@ export default function WorkspaceCampaigns() {
       if (error) throw error;
 
       toast({ title: 'Campaign created', description: `${newCampaign.name} has been added.` });
-      setNewCampaign({ name: '', campaignType: '' });
+      setNewCampaign({ name: '', target: '' });
       setIsDialogOpen(false);
       
       // Navigate to the new campaign view
@@ -221,15 +221,21 @@ export default function WorkspaceCampaigns() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="campaignType">Campaign Type (Optional)</Label>
-                    <Input
-                      id="campaignType"
-                      placeholder="e.g., Cold Calling, Email Outreach"
-                      value={newCampaign.campaignType}
-                      onChange={(e) => setNewCampaign({ ...newCampaign, campaignType: e.target.value })}
-                    />
+                    <Label htmlFor="target">Target</Label>
+                    <Select
+                      value={newCampaign.target}
+                      onValueChange={(value) => setNewCampaign({ ...newCampaign, target: value })}
+                    >
+                      <SelectTrigger id="target">
+                        <SelectValue placeholder="Select target type" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background">
+                        <SelectItem value="client">Client</SelectItem>
+                        <SelectItem value="candidate">Candidate</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  <Button type="submit" className="w-full" disabled={isSubmitting || !newCampaign.target}>
                     {isSubmitting ? 'Creating...' : 'Create Campaign'}
                   </Button>
                 </form>
