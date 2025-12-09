@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { workspaceSidebarItems } from '@/components/layout/Sidebar';
-import { DataTable } from '@/components/shared/DataTable';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -22,29 +21,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { CampaignCard } from '@/components/campaigns/CampaignCard';
+import { CampaignFilters, FilterStatus } from '@/components/campaigns/CampaignFilters';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Plus, Megaphone } from 'lucide-react';
-import { format } from 'date-fns';
+import { startOfQuarter, addDays, startOfMonth, endOfMonth } from 'date-fns';
 
-interface Campaign {
+interface CampaignWithMetrics {
   id: string;
   name: string;
   status: string;
   created_at: string;
-  contact_count: number;
+  attendedMeetings: number;
+  upcomingMeetings: number;
+  connectRate: number;
 }
 
 export default function WorkspaceCampaigns() {
   const { clientId } = useParams<{ clientId: string }>();
   const { isInternalUser } = useAuth();
   const [clientName, setClientName] = useState<string>('');
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [campaigns, setCampaigns] = useState<CampaignWithMetrics[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newCampaign, setNewCampaign] = useState({ name: '', status: 'active' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
   const { toast } = useToast();
 
   async function fetchData() {
@@ -69,18 +73,50 @@ export default function WorkspaceCampaigns() {
 
       if (error) throw error;
 
-      // Fetch contact counts
-      const campaignsWithCounts = await Promise.all(
+      const quarterStart = startOfQuarter(new Date());
+      const next7Days = addDays(new Date(), 7);
+      const monthStart = startOfMonth(new Date());
+
+      // Fetch metrics for each campaign
+      const campaignsWithMetrics = await Promise.all(
         (campaignsData || []).map(async (campaign) => {
-          const { count } = await supabase
+          // Attended meetings this quarter
+          const { count: attendedCount } = await supabase
+            .from('meetings')
+            .select('id', { count: 'exact', head: true })
+            .eq('campaign_id', campaign.id)
+            .eq('status', 'attended')
+            .gte('scheduled_for', quarterStart.toISOString());
+
+          // Upcoming meetings (next 7 days)
+          const { count: upcomingCount } = await supabase
+            .from('meetings')
+            .select('id', { count: 'exact', head: true })
+            .eq('campaign_id', campaign.id)
+            .neq('status', 'cancelled')
+            .gte('scheduled_for', new Date().toISOString())
+            .lte('scheduled_for', next7Days.toISOString());
+
+          // Contact count for connect rate calculation
+          const { count: contactCount } = await supabase
             .from('contacts')
             .select('id', { count: 'exact', head: true })
             .eq('campaign_id', campaign.id);
-          return { ...campaign, contact_count: count ?? 0 };
+
+          // Placeholder connect rate calculation
+          const contacts = contactCount ?? 0;
+          const connectRate = contacts > 0 ? Math.min(Math.round((contacts * 0.15) * 10), 100) : 0;
+
+          return {
+            ...campaign,
+            attendedMeetings: attendedCount ?? 0,
+            upcomingMeetings: upcomingCount ?? 0,
+            connectRate,
+          };
         })
       );
 
-      setCampaigns(campaignsWithCounts);
+      setCampaigns(campaignsWithMetrics);
     } catch (error) {
       console.error('Failed to fetch campaigns:', error);
       toast({
@@ -127,35 +163,15 @@ export default function WorkspaceCampaigns() {
     }
   }
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
-      active: 'default',
-      paused: 'secondary',
-      completed: 'secondary',
-    };
-    return <Badge variant={variants[status] || 'default'}>{status}</Badge>;
-  };
-
-  const columns = [
-    { header: 'Name', accessor: 'name' as const },
-    {
-      header: 'Status',
-      accessor: (row: Campaign) => getStatusBadge(row.status),
-    },
-    {
-      header: 'Created',
-      accessor: (row: Campaign) => format(new Date(row.created_at), 'MMM d, yyyy'),
-    },
-    {
-      header: 'Contacts',
-      accessor: (row: Campaign) => row.contact_count,
-    },
-  ];
+  const filteredCampaigns = useMemo(() => {
+    if (activeFilter === 'all') return campaigns;
+    return campaigns.filter(c => c.status === activeFilter);
+  }, [campaigns, activeFilter]);
 
   return (
     <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName}>
       <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">Campaigns</h1>
             <p className="text-muted-foreground mt-1">
@@ -196,6 +212,7 @@ export default function WorkspaceCampaigns() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
                         <SelectItem value="paused">Paused</SelectItem>
                         <SelectItem value="completed">Completed</SelectItem>
                       </SelectContent>
@@ -210,26 +227,44 @@ export default function WorkspaceCampaigns() {
           )}
         </div>
 
-        <DataTable
-          columns={columns}
-          data={campaigns}
-          isLoading={isLoading}
-          emptyState={
-            <EmptyState
-              icon={Megaphone}
-              title="No campaigns yet"
-              description="Create your first campaign to start tracking activity."
-              action={
-                isInternalUser ? (
-                  <Button onClick={() => setIsDialogOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Campaign
-                  </Button>
-                ) : undefined
-              }
-            />
-          }
-        />
+        {/* Filters */}
+        <CampaignFilters activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+
+        {/* Campaign Cards */}
+        {isLoading ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} className="h-64 rounded-lg" />
+            ))}
+          </div>
+        ) : filteredCampaigns.length === 0 ? (
+          <EmptyState
+            icon={Megaphone}
+            title={activeFilter === 'all' ? 'No campaigns yet' : `No ${activeFilter} campaigns`}
+            description={activeFilter === 'all' 
+              ? 'Create your first campaign to start tracking activity.'
+              : `There are no campaigns with ${activeFilter} status.`
+            }
+            action={
+              isInternalUser && activeFilter === 'all' ? (
+                <Button onClick={() => setIsDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Campaign
+                </Button>
+              ) : undefined
+            }
+          />
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredCampaigns.map((campaign) => (
+              <CampaignCard 
+                key={campaign.id} 
+                campaign={campaign} 
+                clientId={clientId!} 
+              />
+            ))}
+          </div>
+        )}
       </div>
     </AppLayout>
   );

@@ -18,6 +18,7 @@ import WorkspaceDashboard from "./pages/workspace/WorkspaceDashboard";
 import WorkspaceCampaigns from "./pages/workspace/WorkspaceCampaigns";
 import WorkspaceContacts from "./pages/workspace/WorkspaceContacts";
 import WorkspaceMeetings from "./pages/workspace/WorkspaceMeetings";
+import WorkspaceCampaignView from "./pages/workspace/WorkspaceCampaignView";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +75,13 @@ const App = () => (
               <ProtectedRoute>
                 <WorkspaceGuard>
                   <WorkspaceCampaigns />
+                </WorkspaceGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/workspace/:clientId/campaigns/:campaignId" element={
+              <ProtectedRoute>
+                <WorkspaceGuard>
+                  <WorkspaceCampaignView />
                 </WorkspaceGuard>
               </ProtectedRoute>
             } />
