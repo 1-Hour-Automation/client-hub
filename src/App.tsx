@@ -13,6 +13,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminClients from "./pages/admin/AdminClients";
+import AdminUsers from "./pages/admin/AdminUsers";
 import WorkspaceDashboard from "./pages/workspace/WorkspaceDashboard";
 import WorkspaceCampaigns from "./pages/workspace/WorkspaceCampaigns";
 import WorkspaceContacts from "./pages/workspace/WorkspaceContacts";
@@ -50,6 +51,13 @@ const App = () => (
               <ProtectedRoute>
                 <AdminGuard>
                   <AdminClients />
+                </AdminGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/users" element={
+              <ProtectedRoute>
+                <AdminGuard>
+                  <AdminUsers />
                 </AdminGuard>
               </ProtectedRoute>
             } />
