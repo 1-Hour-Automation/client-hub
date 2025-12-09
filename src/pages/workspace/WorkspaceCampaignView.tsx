@@ -168,23 +168,7 @@ export default function WorkspaceCampaignView() {
     return phases[status] || 'Unknown';
   };
 
-  if (isLoading) {
-    return (
-      <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName}>
-        <div className="space-y-6 animate-fade-in">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-24 w-full" />
-          <div className="grid grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24" />)}
-          </div>
-        </div>
-      </AppLayout>
-    );
-  }
-
-  if (!campaign) return null;
-
-  // Meeting metrics for Meetings tab
+  // Meeting metrics for Meetings tab - must be before early returns
   const meetingMetrics = useMemo(() => {
     const totalBooked = meetings.length;
     const quarterStart = startOfQuarter(new Date());
@@ -204,18 +188,19 @@ export default function WorkspaceCampaignView() {
     return { totalBooked, upcomingCount, attendedQuarter, attendanceRate };
   }, [meetings]);
 
-  // Filter meetings by status
+  // Filter meetings by status - must be before early returns
   const filteredMeetings = useMemo(() => {
     if (meetingStatusFilter === 'all') return meetings;
     return meetings.filter(m => m.status === meetingStatusFilter);
   }, [meetings, meetingStatusFilter]);
 
-  const upcomingMeetings = filteredMeetings.filter(m => 
+  const upcomingMeetings = useMemo(() => filteredMeetings.filter(m => 
     m.scheduled_for && new Date(m.scheduled_for) >= new Date() && m.status !== 'cancelled'
-  );
-  const pastMeetings = filteredMeetings.filter(m => 
+  ), [filteredMeetings]);
+  
+  const pastMeetings = useMemo(() => filteredMeetings.filter(m => 
     m.scheduled_for && new Date(m.scheduled_for) < new Date()
-  );
+  ), [filteredMeetings]);
 
   const getMeetingStatusBadgeVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -238,6 +223,22 @@ export default function WorkspaceCampaignView() {
     };
     return labels[status] || status;
   };
+
+  if (isLoading) {
+    return (
+      <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName}>
+        <div className="space-y-6 animate-fade-in">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-24 w-full" />
+          <div className="grid grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24" />)}
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!campaign) return null;
 
   return (
     <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName}>
