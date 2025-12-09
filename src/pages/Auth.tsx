@@ -5,11 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Phone } from 'lucide-react';
+import { Phone, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+type AuthView = 'login' | 'signup' | 'forgot-password';
 
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [view, setView] = useState<AuthView>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -30,7 +33,7 @@ export default function Auth() {
     setIsSubmitting(true);
 
     try {
-      if (isLogin) {
+      if (view === 'login') {
         const { error } = await signIn(email, password);
         if (error) {
           toast({
@@ -41,7 +44,7 @@ export default function Auth() {
         } else {
           navigate('/');
         }
-      } else {
+      } else if (view === 'signup') {
         const { error } = await signUp(email, password, displayName);
         if (error) {
           toast({
@@ -54,13 +57,96 @@ export default function Auth() {
             title: 'Account created',
             description: 'You can now sign in with your credentials.',
           });
-          setIsLogin(true);
+          setView('login');
         }
       }
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast({
+        title: 'Email required',
+        description: 'Please enter your email address.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+      
+      if (error) {
+        toast({
+          title: 'Reset failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Check your email',
+          description: 'We sent you a password reset link.',
+        });
+        setView('login');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (view === 'forgot-password') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md animate-fade-in">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
+                <Phone className="w-6 h-6 text-primary-foreground" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl">Reset Password</CardTitle>
+            <CardDescription>
+              Enter your email and we'll send you a reset link
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePasswordReset} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? 'Sending...' : 'Send Reset Link'}
+              </Button>
+            </form>
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                className="text-primary hover:underline inline-flex items-center gap-1"
+                onClick={() => setView('login')}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to sign in
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -73,12 +159,12 @@ export default function Auth() {
           </div>
           <CardTitle className="text-2xl">CallFlow Portal</CardTitle>
           <CardDescription>
-            {isLogin ? 'Sign in to your account' : 'Create a new account'}
+            {view === 'login' ? 'Sign in to your account' : 'Create a new account'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
+            {view === 'signup' && (
               <div className="space-y-2">
                 <Label htmlFor="displayName">Display Name</Label>
                 <Input
@@ -102,7 +188,18 @@ export default function Auth() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                {view === 'login' && (
+                  <button
+                    type="button"
+                    className="text-sm text-primary hover:underline"
+                    onClick={() => setView('forgot-password')}
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
               <Input
                 id="password"
                 type="password"
@@ -114,16 +211,16 @@ export default function Auth() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Please wait...' : isLogin ? 'Sign In' : 'Sign Up'}
+              {isSubmitting ? 'Please wait...' : view === 'login' ? 'Sign In' : 'Sign Up'}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
             <button
               type="button"
               className="text-primary hover:underline"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => setView(view === 'login' ? 'signup' : 'login')}
             >
-              {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+              {view === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
             </button>
           </div>
         </CardContent>
