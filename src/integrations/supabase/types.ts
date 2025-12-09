@@ -14,6 +14,70 @@ export type Database = {
   }
   public: {
     Tables: {
+      call_logs: {
+        Row: {
+          call_time: string
+          campaign_id: string
+          client_id: string
+          company: string | null
+          contact_id: string | null
+          contact_name: string
+          created_at: string
+          disposition: string
+          id: string
+          notes: string | null
+          phone_number: string
+        }
+        Insert: {
+          call_time?: string
+          campaign_id: string
+          client_id: string
+          company?: string | null
+          contact_id?: string | null
+          contact_name: string
+          created_at?: string
+          disposition: string
+          id?: string
+          notes?: string | null
+          phone_number: string
+        }
+        Update: {
+          call_time?: string
+          campaign_id?: string
+          client_id?: string
+          company?: string | null
+          contact_id?: string | null
+          contact_name?: string
+          created_at?: string
+          disposition?: string
+          id?: string
+          notes?: string | null
+          phone_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_logs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           client_id: string
