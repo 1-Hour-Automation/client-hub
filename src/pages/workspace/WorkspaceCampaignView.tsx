@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { workspaceSidebarItems } from '@/components/layout/Sidebar';
@@ -9,8 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, AlertTriangle, Calendar, Users, Phone, MessageSquare, Clock, Globe, Link, User } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Calendar, Users, Phone, MessageSquare, Clock, Globe, Link, User, CheckCircle, Percent } from 'lucide-react';
 import { format, startOfQuarter, addDays, startOfMonth, endOfMonth } from 'date-fns';
+
+type MeetingStatusFilter = 'all' | 'scheduled' | 'attended' | 'no-show' | 'cancelled' | 'rescheduled';
 
 interface CampaignDetails {
   id: string;
@@ -47,6 +49,7 @@ export default function WorkspaceCampaignView() {
   const [metrics, setMetrics] = useState<CampaignMetrics | null>(null);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [meetingStatusFilter, setMeetingStatusFilter] = useState<MeetingStatusFilter>('all');
 
   useEffect(() => {
     async function fetchData() {
@@ -181,12 +184,60 @@ export default function WorkspaceCampaignView() {
 
   if (!campaign) return null;
 
-  const upcomingMeetings = meetings.filter(m => 
+  // Meeting metrics for Meetings tab
+  const meetingMetrics = useMemo(() => {
+    const totalBooked = meetings.length;
+    const quarterStart = startOfQuarter(new Date());
+    const upcomingCount = meetings.filter(m => 
+      m.scheduled_for && new Date(m.scheduled_for) >= new Date() && m.status !== 'cancelled'
+    ).length;
+    const attendedQuarter = meetings.filter(m => 
+      m.status === 'attended' && m.scheduled_for && new Date(m.scheduled_for) >= quarterStart
+    ).length;
+    const pastMeetingsCount = meetings.filter(m => 
+      m.scheduled_for && new Date(m.scheduled_for) < new Date()
+    ).length;
+    const attendanceRate = pastMeetingsCount > 0 
+      ? Math.round((attendedQuarter / pastMeetingsCount) * 100) 
+      : 0;
+    
+    return { totalBooked, upcomingCount, attendedQuarter, attendanceRate };
+  }, [meetings]);
+
+  // Filter meetings by status
+  const filteredMeetings = useMemo(() => {
+    if (meetingStatusFilter === 'all') return meetings;
+    return meetings.filter(m => m.status === meetingStatusFilter);
+  }, [meetings, meetingStatusFilter]);
+
+  const upcomingMeetings = filteredMeetings.filter(m => 
     m.scheduled_for && new Date(m.scheduled_for) >= new Date() && m.status !== 'cancelled'
   );
-  const pastMeetings = meetings.filter(m => 
+  const pastMeetings = filteredMeetings.filter(m => 
     m.scheduled_for && new Date(m.scheduled_for) < new Date()
   );
+
+  const getMeetingStatusBadgeVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+      scheduled: 'outline',
+      attended: 'default',
+      'no-show': 'destructive',
+      cancelled: 'secondary',
+      rescheduled: 'outline',
+    };
+    return variants[status] || 'outline';
+  };
+
+  const formatMeetingStatus = (status: string): string => {
+    const labels: Record<string, string> = {
+      scheduled: 'Scheduled',
+      attended: 'Attended',
+      'no-show': 'No Show',
+      cancelled: 'Cancelled',
+      rescheduled: 'Rescheduled',
+    };
+    return labels[status] || status;
+  };
 
   return (
     <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName}>
@@ -358,6 +409,58 @@ export default function WorkspaceCampaignView() {
           </TabsContent>
 
           <TabsContent value="meetings" className="space-y-6">
+            {/* KPI Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Calendar className="h-4 w-4" />
+                    <span className="text-xs">Meetings Booked</span>
+                  </div>
+                  <p className="text-2xl font-semibold">{meetingMetrics.totalBooked}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Clock className="h-4 w-4" />
+                    <span className="text-xs">Upcoming Meetings</span>
+                  </div>
+                  <p className="text-2xl font-semibold">{meetingMetrics.upcomingCount}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <CheckCircle className="h-4 w-4" />
+                    <span className="text-xs">Attended (Quarter)</span>
+                  </div>
+                  <p className="text-2xl font-semibold">{meetingMetrics.attendedQuarter}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Percent className="h-4 w-4" />
+                    <span className="text-xs">Attendance Rate</span>
+                  </div>
+                  <p className="text-2xl font-semibold">{meetingMetrics.attendanceRate}%</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Status Filter Tabs */}
+            <Tabs value={meetingStatusFilter} onValueChange={(v) => setMeetingStatusFilter(v as MeetingStatusFilter)}>
+              <TabsList>
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
+                <TabsTrigger value="attended">Attended</TabsTrigger>
+                <TabsTrigger value="no-show">No Show</TabsTrigger>
+                <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+                <TabsTrigger value="rescheduled">Rescheduled</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
             <div className="grid md:grid-cols-2 gap-6">
               {/* Upcoming Meetings */}
               <Card>
@@ -366,7 +469,7 @@ export default function WorkspaceCampaignView() {
                 </CardHeader>
                 <CardContent>
                   {upcomingMeetings.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No upcoming meetings scheduled.</p>
+                    <p className="text-sm text-muted-foreground">No upcoming meetings{meetingStatusFilter !== 'all' ? ` with status "${formatMeetingStatus(meetingStatusFilter)}"` : ''}.</p>
                   ) : (
                     <div className="space-y-3">
                       {upcomingMeetings.slice(0, 5).map(meeting => (
@@ -377,7 +480,9 @@ export default function WorkspaceCampaignView() {
                               {meeting.scheduled_for && format(new Date(meeting.scheduled_for), 'MMM d, h:mm a')}
                             </p>
                           </div>
-                          <Badge variant="outline" className="capitalize text-xs">{meeting.status}</Badge>
+                          <Badge variant={getMeetingStatusBadgeVariant(meeting.status)} className="text-xs">
+                            {formatMeetingStatus(meeting.status)}
+                          </Badge>
                         </div>
                       ))}
                     </div>
@@ -392,7 +497,7 @@ export default function WorkspaceCampaignView() {
                 </CardHeader>
                 <CardContent>
                   {pastMeetings.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No past meetings yet.</p>
+                    <p className="text-sm text-muted-foreground">No past meetings{meetingStatusFilter !== 'all' ? ` with status "${formatMeetingStatus(meetingStatusFilter)}"` : ''}.</p>
                   ) : (
                     <div className="space-y-3">
                       {pastMeetings.slice(0, 5).map(meeting => (
@@ -403,11 +508,8 @@ export default function WorkspaceCampaignView() {
                               {meeting.scheduled_for && format(new Date(meeting.scheduled_for), 'MMM d, yyyy')}
                             </p>
                           </div>
-                          <Badge 
-                            variant={meeting.status === 'attended' ? 'default' : meeting.status === 'cancelled' ? 'destructive' : 'secondary'}
-                            className="capitalize text-xs"
-                          >
-                            {meeting.status === 'no-show' ? 'No-Show' : meeting.status}
+                          <Badge variant={getMeetingStatusBadgeVariant(meeting.status)} className="text-xs">
+                            {formatMeetingStatus(meeting.status)}
                           </Badge>
                         </div>
                       ))}
