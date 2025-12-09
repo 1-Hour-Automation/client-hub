@@ -7,6 +7,7 @@ import {
   Contact, 
   Calendar,
   UserCog,
+  PhoneCall,
 } from 'lucide-react';
 
 interface SidebarItem {
@@ -49,6 +50,7 @@ export const adminSidebarItems: SidebarItem[] = [
   { label: 'Admin Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { label: 'Clients', href: '/admin/clients', icon: Users },
   { label: 'User Management', href: '/admin/users', icon: UserCog },
+  { label: 'Call Log', href: '/admin/call-log', icon: PhoneCall },
 ];
 
 export const workspaceSidebarItems = (clientId: string): SidebarItem[] => [
