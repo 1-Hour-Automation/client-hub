@@ -462,63 +462,46 @@ export default function WorkspaceCampaignView() {
               </TabsList>
             </Tabs>
 
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Upcoming Meetings */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Upcoming Meetings ({upcomingMeetings.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {upcomingMeetings.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No upcoming meetings{meetingStatusFilter !== 'all' ? ` with status "${formatMeetingStatus(meetingStatusFilter)}"` : ''}.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {upcomingMeetings.slice(0, 5).map(meeting => (
-                        <div key={meeting.id} className="flex items-center justify-between text-sm border-b pb-2 last:border-0">
-                          <div>
-                            <p className="font-medium">{meeting.title}</p>
+            {/* Unified Meetings List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  Meetings ({filteredMeetings.length})
+                  {meetingStatusFilter !== 'all' && (
+                    <span className="font-normal text-muted-foreground ml-2">
+                      — {formatMeetingStatus(meetingStatusFilter)}
+                    </span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {filteredMeetings.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No meetings{meetingStatusFilter !== 'all' ? ` with status "${formatMeetingStatus(meetingStatusFilter)}"` : ''} found.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredMeetings.map(meeting => {
+                      const isUpcoming = meeting.scheduled_for && new Date(meeting.scheduled_for) >= new Date();
+                      return (
+                        <div key={meeting.id} className="flex items-center justify-between text-sm border-b pb-3 last:border-0 last:pb-0">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{meeting.title}</p>
                             <p className="text-muted-foreground text-xs">
-                              {meeting.scheduled_for && format(new Date(meeting.scheduled_for), 'MMM d, h:mm a')}
+                              {meeting.scheduled_for && format(new Date(meeting.scheduled_for), isUpcoming ? 'MMM d, h:mm a' : 'MMM d, yyyy')}
+                              {isUpcoming && <span className="ml-2 text-primary">(Upcoming)</span>}
                             </p>
                           </div>
-                          <Badge variant={getMeetingStatusBadgeVariant(meeting.status)} className="text-xs">
+                          <Badge variant={getMeetingStatusBadgeVariant(meeting.status)} className="text-xs ml-2 shrink-0">
                             {formatMeetingStatus(meeting.status)}
                           </Badge>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Past Meetings */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Past Meetings ({pastMeetings.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {pastMeetings.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No past meetings{meetingStatusFilter !== 'all' ? ` with status "${formatMeetingStatus(meetingStatusFilter)}"` : ''}.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {pastMeetings.slice(0, 5).map(meeting => (
-                        <div key={meeting.id} className="flex items-center justify-between text-sm border-b pb-2 last:border-0">
-                          <div>
-                            <p className="font-medium">{meeting.title}</p>
-                            <p className="text-muted-foreground text-xs">
-                              {meeting.scheduled_for && format(new Date(meeting.scheduled_for), 'MMM d, yyyy')}
-                            </p>
-                          </div>
-                          <Badge variant={getMeetingStatusBadgeVariant(meeting.status)} className="text-xs">
-                            {formatMeetingStatus(meeting.status)}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="script" className="space-y-6">
