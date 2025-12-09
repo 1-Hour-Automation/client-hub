@@ -1,8 +1,44 @@
+import { useEffect, useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { adminSidebarItems } from '@/components/layout/Sidebar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatCard } from '@/components/shared/StatCard';
+import { supabase } from '@/integrations/supabase/client';
+import { Users, Megaphone, Calendar } from 'lucide-react';
+
+interface Stats {
+  totalClients: number;
+  totalCampaigns: number;
+  totalMeetings: number;
+}
 
 export default function AdminDashboard() {
+  const [stats, setStats] = useState<Stats>({ totalClients: 0, totalCampaigns: 0, totalMeetings: 0 });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const [clientsRes, campaignsRes, meetingsRes] = await Promise.all([
+          supabase.from('clients').select('id', { count: 'exact', head: true }),
+          supabase.from('campaigns').select('id', { count: 'exact', head: true }),
+          supabase.from('meetings').select('id', { count: 'exact', head: true }),
+        ]);
+
+        setStats({
+          totalClients: clientsRes.count ?? 0,
+          totalCampaigns: campaignsRes.count ?? 0,
+          totalMeetings: meetingsRes.count ?? 0,
+        });
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchStats();
+  }, []);
+
   return (
     <AppLayout sidebarItems={adminSidebarItems}>
       <div className="space-y-6 animate-fade-in">
@@ -13,17 +49,29 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        <Card className="glass-card">
-          <CardHeader>
-            <CardTitle className="text-lg">Dashboard Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              This is a placeholder for the admin dashboard. Here you'll see aggregated metrics 
-              across all clients, including total calls made, meetings scheduled, and campaign performance.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="grid gap-4 md:grid-cols-3">
+          <StatCard
+            label="Total Clients"
+            value={stats.totalClients}
+            subtext="All time"
+            icon={Users}
+            isLoading={isLoading}
+          />
+          <StatCard
+            label="Total Campaigns"
+            value={stats.totalCampaigns}
+            subtext="All time"
+            icon={Megaphone}
+            isLoading={isLoading}
+          />
+          <StatCard
+            label="Meetings Booked"
+            value={stats.totalMeetings}
+            subtext="All time"
+            icon={Calendar}
+            isLoading={isLoading}
+          />
+        </div>
       </div>
     </AppLayout>
   );
