@@ -5,7 +5,6 @@ import { workspaceSidebarItems } from '@/components/layout/Sidebar';
 import { PortfolioKPIs } from '@/components/dashboard/PortfolioKPIs';
 import { CampaignOverviewTable, CampaignOverview } from '@/components/dashboard/CampaignOverviewTable';
 import { RecentActivityFeed, ActivityItem } from '@/components/dashboard/RecentActivityFeed';
-import { CampaignHealthIndicator } from '@/components/dashboard/CampaignHealthIndicator';
 import { AccountManagerCard } from '@/components/dashboard/AccountManagerCard';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfQuarter, endOfQuarter, startOfWeek, endOfWeek, addDays } from 'date-fns';
@@ -246,19 +245,9 @@ export default function WorkspaceDashboard() {
           </div>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-5">
-            <CampaignOverviewTable campaigns={campaigns} isLoading={isLoading} />
-            <RecentActivityFeed activities={activities} isLoading={isLoading} />
-          </div>
-          <div>
-            <CampaignHealthIndicator
-              healthyCampaigns={healthCounts.healthy}
-              moderateCampaigns={healthCounts.moderate}
-              attentionCampaigns={healthCounts.attention}
-              isLoading={isLoading}
-            />
-          </div>
+        <div className="space-y-5">
+          <CampaignOverviewTable campaigns={campaigns} isLoading={isLoading} />
+          <RecentActivityFeed activities={activities} isLoading={isLoading} />
         </div>
       </div>
     </AppLayout>
