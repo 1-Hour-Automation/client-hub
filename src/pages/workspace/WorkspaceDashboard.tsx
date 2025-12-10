@@ -3,9 +3,10 @@ import { useParams } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { workspaceSidebarItems } from '@/components/layout/Sidebar';
 import { PortfolioKPIs } from '@/components/dashboard/PortfolioKPIs';
-import { CampaignOverviewTable, CampaignOverview } from '@/components/dashboard/CampaignOverviewTable';
+import { CampaignCard } from '@/components/campaigns/CampaignCard';
 import { RecentActivityFeed, ActivityItem } from '@/components/dashboard/RecentActivityFeed';
 import { AccountManagerCard } from '@/components/dashboard/AccountManagerCard';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfQuarter, endOfQuarter, startOfWeek, endOfWeek, addDays } from 'date-fns';
 
@@ -16,10 +17,15 @@ interface KPIs {
   contactsReached: number;
 }
 
-interface HealthCounts {
-  healthy: number;
-  moderate: number;
-  attention: number;
+interface CampaignWithMetrics {
+  id: string;
+  name: string;
+  status: string;
+  phase: string | null;
+  target: string | null;
+  attendedMeetings: number;
+  upcomingMeetings: number;
+  connectRate: number;
 }
 
 interface AccountManagerInfo {
@@ -33,9 +39,8 @@ export default function WorkspaceDashboard() {
   const [clientName, setClientName] = useState<string>('');
   const [accountManager, setAccountManager] = useState<AccountManagerInfo>({ name: null, email: null, meetingLink: null });
   const [kpis, setKpis] = useState<KPIs>({ attendedMeetings: 0, upcomingMeetings: 0, activeCampaigns: 0, contactsReached: 0 });
-  const [campaigns, setCampaigns] = useState<CampaignOverview[]>([]);
+  const [campaigns, setCampaigns] = useState<CampaignWithMetrics[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [healthCounts, setHealthCounts] = useState<HealthCounts>({ healthy: 0, moderate: 0, attention: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -110,12 +115,12 @@ export default function WorkspaceDashboard() {
         // Fetch campaigns with meeting stats
         const { data: campaignsData } = await supabase
           .from('campaigns')
-          .select('id, name, status, phase, bdr_assigned')
+          .select('id, name, status, phase, target')
           .eq('client_id', clientId)
           .is('deleted_at', null);
 
         if (campaignsData) {
-          const campaignOverviews: CampaignOverview[] = await Promise.all(
+          const campaignOverviews: CampaignWithMetrics[] = await Promise.all(
             campaignsData.map(async (campaign) => {
               const { count: attended } = await supabase
                 .from('meetings')
@@ -138,23 +143,15 @@ export default function WorkspaceDashboard() {
                 name: campaign.name,
                 status: campaign.status,
                 phase: campaign.phase,
-                bdrAssigned: campaign.bdr_assigned,
-                attendedThisQuarter: attended ?? 0,
+                target: campaign.target,
+                attendedMeetings: attended ?? 0,
                 upcomingMeetings: upcoming ?? 0,
+                connectRate: 0, // Placeholder - requires call log data
               };
             })
           );
 
           setCampaigns(campaignOverviews);
-
-          // Calculate health counts
-          let healthy = 0, moderate = 0, attention = 0;
-          campaignOverviews.forEach((c) => {
-            if (c.attendedThisQuarter > 3) healthy++;
-            else if (c.attendedThisQuarter >= 1) moderate++;
-            else attention++;
-          });
-          setHealthCounts({ healthy, moderate, attention });
         }
 
         // Fetch recent meetings for activity feed
@@ -246,7 +243,32 @@ export default function WorkspaceDashboard() {
         </div>
 
         <div className="space-y-5">
-          <CampaignOverviewTable campaigns={campaigns} clientId={clientId!} isLoading={isLoading} />
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-medium">Campaign Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {isLoading ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="h-24 animate-pulse rounded bg-muted" />
+                  ))}
+                </div>
+              ) : campaigns.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">
+                  No campaigns yet. Create your first campaign to see performance data.
+                </p>
+              ) : (
+                campaigns.map((campaign) => (
+                  <CampaignCard
+                    key={campaign.id}
+                    campaign={campaign}
+                    clientId={clientId!}
+                  />
+                ))
+              )}
+            </CardContent>
+          </Card>
           <RecentActivityFeed activities={activities} isLoading={isLoading} />
         </div>
       </div>
