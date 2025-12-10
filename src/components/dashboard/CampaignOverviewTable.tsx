@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -21,6 +22,7 @@ export interface CampaignOverview {
 
 interface CampaignOverviewTableProps {
   campaigns: CampaignOverview[];
+  clientId: string;
   isLoading: boolean;
 }
 
@@ -60,7 +62,8 @@ function getPhaseLabel(phase: string): string {
   return phase.toLowerCase() === 'performance' ? 'Performance' : 'Sprint';
 }
 
-export function CampaignOverviewTable({ campaigns, isLoading }: CampaignOverviewTableProps) {
+export function CampaignOverviewTable({ campaigns, clientId, isLoading }: CampaignOverviewTableProps) {
+  const navigate = useNavigate();
   if (isLoading) {
     return (
       <Card className="bg-card border-border">
@@ -117,7 +120,11 @@ export function CampaignOverviewTable({ campaigns, isLoading }: CampaignOverview
               const statusLabel = getStatusLabel(campaign.status);
               const statusBadgeVariant = getStatusBadgeVariant(campaign.status);
               return (
-                <TableRow key={campaign.id}>
+                <TableRow 
+                  key={campaign.id} 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => navigate(`/workspace/${clientId}/campaigns/${campaign.id}`)}
+                >
                   <TableCell className="font-medium">{campaign.name}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {campaign.bdrAssigned || 'Unassigned'}

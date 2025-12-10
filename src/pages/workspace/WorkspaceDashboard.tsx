@@ -246,7 +246,7 @@ export default function WorkspaceDashboard() {
         </div>
 
         <div className="space-y-5">
-          <CampaignOverviewTable campaigns={campaigns} isLoading={isLoading} />
+          <CampaignOverviewTable campaigns={campaigns} clientId={clientId!} isLoading={isLoading} />
           <RecentActivityFeed activities={activities} isLoading={isLoading} />
         </div>
       </div>
