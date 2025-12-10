@@ -24,8 +24,18 @@ export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Listen for password recovery event
+  // Listen for password recovery event and check URL hash on load
   useEffect(() => {
+    // Check if we're coming from a recovery link by looking at URL hash
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    const type = hashParams.get('type');
+    
+    if (accessToken && type === 'recovery') {
+      setIsRecoveryMode(true);
+      setView('update-password');
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         setIsRecoveryMode(true);
