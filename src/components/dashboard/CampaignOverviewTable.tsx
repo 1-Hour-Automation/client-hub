@@ -24,10 +24,32 @@ interface CampaignOverviewTableProps {
   isLoading: boolean;
 }
 
-function getHealthStatus(attended: number): { label: string; variant: 'default' | 'secondary' | 'destructive' } {
-  if (attended > 3) return { label: 'Healthy', variant: 'default' };
-  if (attended >= 1) return { label: 'Moderate', variant: 'secondary' };
-  return { label: 'Needs Attention', variant: 'destructive' };
+function getStatusBadgeVariant(status: string): 'default' | 'secondary' | 'outline' | 'destructive' {
+  switch (status.toLowerCase()) {
+    case 'active':
+      return 'default';
+    case 'paused':
+      return 'secondary';
+    case 'completed':
+      return 'outline';
+    default:
+      return 'secondary';
+  }
+}
+
+function getStatusLabel(status: string): string {
+  switch (status.toLowerCase()) {
+    case 'active':
+      return 'Active';
+    case 'paused':
+      return 'Paused';
+    case 'completed':
+      return 'Completed';
+    case 'onboarding_required':
+      return 'Onboarding';
+    default:
+      return status;
+  }
 }
 
 function getPhaseBadgeVariant(phase: string): 'default' | 'secondary' {
@@ -90,9 +112,10 @@ export function CampaignOverviewTable({ campaigns, isLoading }: CampaignOverview
           </TableHeader>
           <TableBody>
             {campaigns.map((campaign) => {
-              const health = getHealthStatus(campaign.attendedThisQuarter);
               const phaseLabel = getPhaseLabel(campaign.phase);
               const phaseBadgeVariant = getPhaseBadgeVariant(campaign.phase);
+              const statusLabel = getStatusLabel(campaign.status);
+              const statusBadgeVariant = getStatusBadgeVariant(campaign.status);
               return (
                 <TableRow key={campaign.id}>
                   <TableCell className="font-medium">{campaign.name}</TableCell>
@@ -105,7 +128,7 @@ export function CampaignOverviewTable({ campaigns, isLoading }: CampaignOverview
                   <TableCell className="text-center">{campaign.attendedThisQuarter}</TableCell>
                   <TableCell className="text-center">{campaign.upcomingMeetings}</TableCell>
                   <TableCell className="text-right">
-                    <Badge variant={health.variant}>{health.label}</Badge>
+                    <Badge variant={statusBadgeVariant}>{statusLabel}</Badge>
                   </TableCell>
                 </TableRow>
               );
