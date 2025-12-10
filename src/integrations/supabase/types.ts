@@ -80,6 +80,7 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          bdr_assigned: string | null
           campaign_type: string | null
           client_id: string
           created_at: string
@@ -118,6 +119,7 @@ export type Database = {
           tier: string | null
         }
         Insert: {
+          bdr_assigned?: string | null
           campaign_type?: string | null
           client_id: string
           created_at?: string
@@ -156,6 +158,7 @@ export type Database = {
           tier?: string | null
         }
         Update: {
+          bdr_assigned?: string | null
           campaign_type?: string | null
           client_id?: string
           created_at?: string

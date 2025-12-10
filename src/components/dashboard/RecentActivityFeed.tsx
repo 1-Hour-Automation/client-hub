@@ -59,7 +59,7 @@ export function RecentActivityFeed({ activities, isLoading }: RecentActivityFeed
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground py-4 text-center">
-            No recent activity. Updates will appear here as your campaigns progress.
+            No recent activity yet — your updates will appear here as campaigns progress.
           </p>
         </CardContent>
       </Card>

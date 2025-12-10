@@ -4,14 +4,11 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { workspaceSidebarItems } from '@/components/layout/Sidebar';
 import { PortfolioKPIs } from '@/components/dashboard/PortfolioKPIs';
 import { CampaignOverviewTable, CampaignOverview } from '@/components/dashboard/CampaignOverviewTable';
-import { ActivitySnapshot } from '@/components/dashboard/ActivitySnapshot';
 import { RecentActivityFeed, ActivityItem } from '@/components/dashboard/RecentActivityFeed';
 import { CampaignHealthIndicator } from '@/components/dashboard/CampaignHealthIndicator';
-import { QuickLinks } from '@/components/dashboard/QuickLinks';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AccountManagerCard } from '@/components/dashboard/AccountManagerCard';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfQuarter, endOfQuarter, startOfWeek, endOfWeek, addDays } from 'date-fns';
-import { Info } from 'lucide-react';
 
 interface KPIs {
   attendedMeetings: number;
@@ -26,9 +23,16 @@ interface HealthCounts {
   attention: number;
 }
 
+interface AccountManagerInfo {
+  name: string | null;
+  email: string | null;
+  meetingLink: string | null;
+}
+
 export default function WorkspaceDashboard() {
   const { clientId } = useParams<{ clientId: string }>();
   const [clientName, setClientName] = useState<string>('');
+  const [accountManager, setAccountManager] = useState<AccountManagerInfo>({ name: null, email: null, meetingLink: null });
   const [kpis, setKpis] = useState<KPIs>({ attendedMeetings: 0, upcomingMeetings: 0, activeCampaigns: 0, contactsReached: 0 });
   const [campaigns, setCampaigns] = useState<CampaignOverview[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
@@ -47,14 +51,21 @@ export default function WorkspaceDashboard() {
       const next7Days = addDays(now, 7).toISOString();
 
       try {
-        // Fetch client name
+        // Fetch client info including account manager
         const { data: clientData } = await supabase
           .from('clients')
-          .select('name')
+          .select('name, account_manager, primary_contact_email, meeting_link')
           .eq('id', clientId)
           .maybeSingle();
 
-        if (clientData) setClientName(clientData.name);
+        if (clientData) {
+          setClientName(clientData.name);
+          setAccountManager({
+            name: clientData.account_manager,
+            email: clientData.primary_contact_email,
+            meetingLink: clientData.meeting_link,
+          });
+        }
 
         // Fetch attended meetings this quarter
         const { count: attendedCount } = await supabase
@@ -100,8 +111,9 @@ export default function WorkspaceDashboard() {
         // Fetch campaigns with meeting stats
         const { data: campaignsData } = await supabase
           .from('campaigns')
-          .select('id, name, status')
-          .eq('client_id', clientId);
+          .select('id, name, status, phase, bdr_assigned')
+          .eq('client_id', clientId)
+          .is('deleted_at', null);
 
         if (campaignsData) {
           const campaignOverviews: CampaignOverview[] = await Promise.all(
@@ -126,6 +138,8 @@ export default function WorkspaceDashboard() {
                 id: campaign.id,
                 name: campaign.name,
                 status: campaign.status,
+                phase: campaign.phase,
+                bdrAssigned: campaign.bdr_assigned,
                 attendedThisQuarter: attended ?? 0,
                 upcomingMeetings: upcoming ?? 0,
               };
@@ -204,48 +218,46 @@ export default function WorkspaceDashboard() {
 
   return (
     <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName}>
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-5 animate-fade-in">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Portfolio Dashboard</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{clientName} Dashboard</h1>
           <p className="text-muted-foreground mt-1">
             Combined performance across all your campaigns.
           </p>
         </div>
 
-        <Alert className="bg-muted/50 border-border">
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            Holiday season may impact response rates. We're adjusting outreach timing accordingly.
-          </AlertDescription>
-        </Alert>
+        <div className="grid gap-5 lg:grid-cols-4">
+          <div className="lg:col-span-3">
+            <PortfolioKPIs
+              attendedMeetings={kpis.attendedMeetings}
+              upcomingMeetings={kpis.upcomingMeetings}
+              activeCampaigns={kpis.activeCampaigns}
+              contactsReached={kpis.contactsReached}
+              isLoading={isLoading}
+            />
+          </div>
+          <div>
+            <AccountManagerCard
+              name={accountManager.name}
+              email={accountManager.email}
+              meetingLink={accountManager.meetingLink}
+              isLoading={isLoading}
+            />
+          </div>
+        </div>
 
-        <PortfolioKPIs
-          attendedMeetings={kpis.attendedMeetings}
-          upcomingMeetings={kpis.upcomingMeetings}
-          activeCampaigns={kpis.activeCampaigns}
-          contactsReached={kpis.contactsReached}
-          isLoading={isLoading}
-        />
-
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid gap-5 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-5">
             <CampaignOverviewTable campaigns={campaigns} isLoading={isLoading} />
             <RecentActivityFeed activities={activities} isLoading={isLoading} />
           </div>
-          <div className="space-y-6">
+          <div>
             <CampaignHealthIndicator
               healthyCampaigns={healthCounts.healthy}
               moderateCampaigns={healthCounts.moderate}
               attentionCampaigns={healthCounts.attention}
               isLoading={isLoading}
             />
-            <ActivitySnapshot
-              contactsReached={kpis.contactsReached}
-              connects={Math.floor(kpis.contactsReached * 0.4)} // TODO: Track actual connects
-              positiveConversations={Math.floor(kpis.contactsReached * 0.15)} // TODO: Track actual conversations
-              isLoading={isLoading}
-            />
-            <QuickLinks clientId={clientId!} />
           </div>
         </div>
       </div>
