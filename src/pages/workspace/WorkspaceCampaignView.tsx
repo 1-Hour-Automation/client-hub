@@ -234,24 +234,15 @@ export default function WorkspaceCampaignView() {
     fetchData();
   }, [clientId, campaignId, navigate, toast]);
 
-  const getStatusVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      active: 'default',
-      pending: 'outline',
-      paused: 'secondary',
-      completed: 'secondary',
-      onboarding_required: 'outline',
+  const getStatusBadgeClass = (status: string): string => {
+    const classes: Record<string, string> = {
+      active: 'badge-status-active',
+      pending: 'badge-status-pending',
+      paused: 'badge-status-paused',
+      completed: 'badge-status-completed',
+      onboarding_required: 'badge-status-pending',
     };
-    return variants[status] || 'default';
-  };
-
-  const getPhaseLabel = (phase: string): string => {
-    const phases: Record<string, string> = {
-      sprint: 'Sprint',
-      performance: 'Performance Plan',
-      not_started: 'Not Started',
-    };
-    return phases[phase] || phase;
+    return classes[status] || 'badge-status-paused';
   };
 
   const getStatusLabel = (status: string): string => {
@@ -260,9 +251,17 @@ export default function WorkspaceCampaignView() {
       pending: 'Pending',
       paused: 'Paused',
       completed: 'Completed',
-      onboarding_required: 'Onboarding Required',
+      onboarding_required: 'Pending',
     };
     return labels[status] || status;
+  };
+
+  const getPhaseBadgeClass = (phase: string): string => {
+    return phase.toLowerCase() === 'performance' ? 'badge-phase-performance' : 'badge-phase-sprint';
+  };
+
+  const getPhaseLabel = (phase: string): string => {
+    return phase.toLowerCase() === 'performance' ? 'Performance' : 'Sprint';
   };
 
   // Meeting metrics for Meetings tab - must be before early returns
@@ -458,12 +457,16 @@ export default function WorkspaceCampaignView() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant={getStatusVariant(campaign.status)} className="capitalize">
+              <Badge variant="outline" className={getStatusBadgeClass(campaign.status)}>
                 {getStatusLabel(campaign.status)}
               </Badge>
-              <Badge variant="outline">{getPhaseLabel(campaign.phase)}</Badge>
+              {campaign.phase && (
+                <Badge variant="outline" className={getPhaseBadgeClass(campaign.phase)}>
+                  {getPhaseLabel(campaign.phase)}
+                </Badge>
+              )}
               {campaign.target && (
-                <Badge variant="secondary" className="capitalize">
+                <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200/50 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700/40 capitalize">
                   {campaign.target}
                 </Badge>
               )}
