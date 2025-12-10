@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { UserCog, Shield, Edit } from 'lucide-react';
+import { UserCog, Shield, Edit, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 
 type AppRole = 'admin' | 'bdr' | 'client';
@@ -49,6 +49,7 @@ export default function AdminUsers() {
   const [selectedRoles, setSelectedRoles] = useState<AppRole[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const { toast } = useToast();
 
   async function fetchData() {
@@ -235,11 +236,17 @@ export default function AdminUsers() {
   return (
     <AppLayout sidebarItems={adminSidebarItems}>
       <div className="space-y-6 animate-fade-in">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">User Management</h1>
-          <p className="text-muted-foreground mt-1">
-            Assign roles and client access to users.
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">User Management</h1>
+            <p className="text-muted-foreground mt-1">
+              Assign roles and client access to users.
+            </p>
+          </div>
+          <Button onClick={() => setIsInviteModalOpen(true)}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Invite User
+          </Button>
         </div>
 
         <DataTable
@@ -318,6 +325,17 @@ export default function AdminUsers() {
                 </Button>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5" />
+                Invite New User
+              </DialogTitle>
+            </DialogHeader>
           </DialogContent>
         </Dialog>
       </div>
