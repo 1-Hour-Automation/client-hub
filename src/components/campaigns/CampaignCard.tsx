@@ -15,6 +15,7 @@ interface CampaignCardProps {
     id: string;
     name: string;
     status: string;
+    phase: string | null;
     attendedMeetings: number;
     upcomingMeetings: number;
     connectRate: number;
@@ -40,18 +41,9 @@ export function CampaignCard({
       pending: 'badge-status-pending',
       paused: 'badge-status-paused',
       completed: 'badge-status-completed',
-      onboarding_required: 'badge-status-onboarding',
+      onboarding_required: 'badge-status-pending',
     };
     return classes[status] || 'badge-status-paused';
-  };
-
-  const getPhaseBadgeClass = (status: string): string => {
-    // Determine phase based on status - active means Performance, others mean Sprint
-    return status === 'active' ? 'badge-phase-performance' : 'badge-phase-sprint';
-  };
-
-  const getPhaseLabel = (status: string): string => {
-    return status === 'active' ? 'Performance' : 'Sprint';
   };
 
   const getStatusLabel = (status: string): string => {
@@ -60,9 +52,17 @@ export function CampaignCard({
       pending: 'Pending',
       paused: 'Paused',
       completed: 'Completed',
-      onboarding_required: 'Onboarding',
+      onboarding_required: 'Pending',
     };
     return labels[status] || status;
+  };
+
+  const getPhaseBadgeClass = (phase: string): string => {
+    return phase.toLowerCase() === 'performance' ? 'badge-phase-performance' : 'badge-phase-sprint';
+  };
+
+  const getPhaseLabel = (phase: string): string => {
+    return phase.toLowerCase() === 'performance' ? 'Performance' : 'Sprint';
   };
 
   return (
@@ -75,9 +75,11 @@ export function CampaignCard({
               {campaign.name}
             </h3>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className={`text-xs font-normal ${getPhaseBadgeClass(campaign.status)}`}>
-                {getPhaseLabel(campaign.status)}
-              </Badge>
+              {campaign.phase && (
+                <Badge variant="outline" className={`text-xs font-normal ${getPhaseBadgeClass(campaign.phase)}`}>
+                  {getPhaseLabel(campaign.phase)}
+                </Badge>
+              )}
               <Badge variant="outline" className={`text-xs font-medium ${getStatusBadgeClass(campaign.status)}`}>
                 {getStatusLabel(campaign.status)}
               </Badge>
