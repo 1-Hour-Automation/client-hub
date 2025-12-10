@@ -30,32 +30,12 @@ function getHealthStatus(attended: number): { label: string; variant: 'default' 
   return { label: 'Needs Attention', variant: 'destructive' };
 }
 
-function getPhaseBadgeVariant(phase: string): 'default' | 'secondary' | 'outline' {
-  switch (phase.toLowerCase()) {
-    case 'sprint':
-      return 'default';
-    case 'performance':
-      return 'secondary';
-    default:
-      return 'outline';
-  }
+function getPhaseBadgeVariant(phase: string): 'default' | 'secondary' {
+  return phase.toLowerCase() === 'performance' ? 'secondary' : 'default';
 }
 
 function getPhaseLabel(phase: string): string {
-  switch (phase.toLowerCase()) {
-    case 'not_started':
-      return 'Not Started';
-    case 'sprint':
-      return 'Sprint';
-    case 'performance':
-      return 'Performance';
-    case 'paused':
-      return 'Paused';
-    case 'completed':
-      return 'Completed';
-    default:
-      return phase;
-  }
+  return phase.toLowerCase() === 'performance' ? 'Performance' : 'Sprint';
 }
 
 export function CampaignOverviewTable({ campaigns, isLoading }: CampaignOverviewTableProps) {
