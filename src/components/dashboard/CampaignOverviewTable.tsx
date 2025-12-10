@@ -13,6 +13,8 @@ export interface CampaignOverview {
   id: string;
   name: string;
   status: string;
+  phase: string;
+  bdrAssigned: string | null;
   attendedThisQuarter: number;
   upcomingMeetings: number;
 }
@@ -28,16 +30,31 @@ function getHealthStatus(attended: number): { label: string; variant: 'default' 
   return { label: 'Needs Attention', variant: 'destructive' };
 }
 
-function getPhaseLabel(status: string): string {
-  switch (status.toLowerCase()) {
-    case 'active':
+function getPhaseBadgeVariant(phase: string): 'default' | 'secondary' | 'outline' {
+  switch (phase.toLowerCase()) {
+    case 'sprint':
+      return 'default';
+    case 'performance':
+      return 'secondary';
+    default:
+      return 'outline';
+  }
+}
+
+function getPhaseLabel(phase: string): string {
+  switch (phase.toLowerCase()) {
+    case 'not_started':
+      return 'Not Started';
+    case 'sprint':
       return 'Sprint';
+    case 'performance':
+      return 'Performance';
     case 'paused':
       return 'Paused';
     case 'completed':
       return 'Completed';
     default:
-      return 'Performance Plan';
+      return phase;
   }
 }
 
@@ -84,6 +101,7 @@ export function CampaignOverviewTable({ campaigns, isLoading }: CampaignOverview
           <TableHeader>
             <TableRow>
               <TableHead>Campaign</TableHead>
+              <TableHead>BDR</TableHead>
               <TableHead>Phase</TableHead>
               <TableHead className="text-center">Attended</TableHead>
               <TableHead className="text-center">Upcoming</TableHead>
@@ -93,11 +111,16 @@ export function CampaignOverviewTable({ campaigns, isLoading }: CampaignOverview
           <TableBody>
             {campaigns.map((campaign) => {
               const health = getHealthStatus(campaign.attendedThisQuarter);
+              const phaseLabel = getPhaseLabel(campaign.phase);
+              const phaseBadgeVariant = getPhaseBadgeVariant(campaign.phase);
               return (
                 <TableRow key={campaign.id}>
                   <TableCell className="font-medium">{campaign.name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {getPhaseLabel(campaign.status)}
+                  <TableCell className="text-muted-foreground text-sm">
+                    {campaign.bdrAssigned || 'Unassigned'}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={phaseBadgeVariant}>{phaseLabel}</Badge>
                   </TableCell>
                   <TableCell className="text-center">{campaign.attendedThisQuarter}</TableCell>
                   <TableCell className="text-center">{campaign.upcomingMeetings}</TableCell>
