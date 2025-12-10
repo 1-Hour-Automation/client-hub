@@ -110,4 +110,52 @@
   .glass-card {
     @apply bg-card/80 backdrop-blur-sm border border-border/50 shadow-sm;
   }
+
+  /* Status Badge Colors - Premium, Minimal */
+  .badge-status-pending {
+    @apply bg-amber-50 text-amber-700 border-amber-200/50;
+  }
+  .badge-status-active {
+    @apply bg-blue-50 text-blue-700 border-blue-200/50;
+  }
+  .badge-status-paused {
+    @apply bg-slate-100 text-slate-600 border-slate-200/50;
+  }
+  .badge-status-completed {
+    @apply bg-emerald-50 text-emerald-700 border-emerald-200/50;
+  }
+  .badge-status-onboarding {
+    @apply bg-amber-50 text-amber-700 border-amber-200/50;
+  }
+
+  /* Phase Badge Colors - Quieter, Neutral-toned */
+  .badge-phase-sprint {
+    @apply bg-slate-100 text-slate-600 border-slate-200/60;
+  }
+  .badge-phase-performance {
+    @apply bg-violet-50/70 text-violet-600 border-violet-200/50;
+  }
+
+  /* Dark mode adjustments */
+  .dark .badge-status-pending {
+    @apply bg-amber-950/30 text-amber-400 border-amber-800/30;
+  }
+  .dark .badge-status-active {
+    @apply bg-blue-950/30 text-blue-400 border-blue-800/30;
+  }
+  .dark .badge-status-paused {
+    @apply bg-slate-800/50 text-slate-400 border-slate-700/30;
+  }
+  .dark .badge-status-completed {
+    @apply bg-emerald-950/30 text-emerald-400 border-emerald-800/30;
+  }
+  .dark .badge-status-onboarding {
+    @apply bg-amber-950/30 text-amber-400 border-amber-800/30;
+  }
+  .dark .badge-phase-sprint {
+    @apply bg-slate-800/50 text-slate-400 border-slate-700/40;
+  }
+  .dark .badge-phase-performance {
+    @apply bg-violet-950/30 text-violet-400 border-violet-800/30;
+  }
 }

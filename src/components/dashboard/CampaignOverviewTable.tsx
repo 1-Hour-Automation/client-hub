@@ -26,22 +26,25 @@ interface CampaignOverviewTableProps {
   isLoading: boolean;
 }
 
-function getStatusBadgeVariant(status: string): 'default' | 'secondary' | 'outline' | 'destructive' {
+function getStatusBadgeClass(status: string): string {
   switch (status.toLowerCase()) {
     case 'active':
-      return 'default';
+      return 'badge-status-active';
+    case 'pending':
+      return 'badge-status-pending';
     case 'paused':
-      return 'secondary';
+      return 'badge-status-paused';
     case 'completed':
-      return 'outline';
+      return 'badge-status-completed';
+    case 'onboarding_required':
+      return 'badge-status-onboarding';
     default:
-      return 'secondary';
+      return 'badge-status-paused';
   }
 }
 
-
-function getPhaseBadgeVariant(phase: string): 'default' | 'secondary' {
-  return phase.toLowerCase() === 'performance' ? 'secondary' : 'default';
+function getPhaseBadgeClass(phase: string): string {
+  return phase.toLowerCase() === 'performance' ? 'badge-phase-performance' : 'badge-phase-sprint';
 }
 
 function getPhaseLabel(phase: string): string {
@@ -109,9 +112,9 @@ export function CampaignOverviewTable({ campaigns, clientId, isLoading }: Campai
           <TableBody>
             {campaigns.map((campaign) => {
               const phaseLabel = getPhaseLabel(campaign.phase);
-              const phaseBadgeVariant = getPhaseBadgeVariant(campaign.phase);
+              const phaseBadgeClass = getPhaseBadgeClass(campaign.phase);
               const statusLabel = formatStatusLabel(campaign.status);
-              const statusBadgeVariant = getStatusBadgeVariant(campaign.status);
+              const statusBadgeClass = getStatusBadgeClass(campaign.status);
               return (
                 <TableRow 
                   key={campaign.id} 
@@ -123,12 +126,12 @@ export function CampaignOverviewTable({ campaigns, clientId, isLoading }: Campai
                     {campaign.bdrAssigned || 'Unassigned'}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={phaseBadgeVariant}>{phaseLabel}</Badge>
+                    <Badge variant="outline" className={phaseBadgeClass}>{phaseLabel}</Badge>
                   </TableCell>
                   <TableCell className="text-center">{campaign.attendedThisQuarter}</TableCell>
                   <TableCell className="text-center">{campaign.upcomingMeetings}</TableCell>
                   <TableCell className="text-right">
-                    <Badge variant={statusBadgeVariant}>{statusLabel}</Badge>
+                    <Badge variant="outline" className={statusBadgeClass}>{statusLabel}</Badge>
                   </TableCell>
                 </TableRow>
               );
