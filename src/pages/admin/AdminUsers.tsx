@@ -60,7 +60,7 @@ export default function AdminUsers() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
   const [inviteRole, setInviteRole] = useState<string>('');
-  const [inviteClientId, setInviteClientId] = useState<string>('');
+  const [inviteWorkspaceIds, setInviteWorkspaceIds] = useState<string[]>([]);
   const [workspaceDrawerUser, setWorkspaceDrawerUser] = useState<UserRow | null>(null);
   const { toast } = useToast();
 
@@ -395,19 +395,38 @@ export default function AdminUsers() {
               </div>
 
               <div className="space-y-2">
-                <Label>Assigned Client Workspace</Label>
-                <Select value={inviteClientId} onValueChange={setInviteClientId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Workspaces Assigned</Label>
+                <div className="border rounded-md p-3 space-y-2 max-h-48 overflow-y-auto">
+                  {clients.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No workspaces available</p>
+                  ) : (
+                    clients.map((client) => (
+                      <label
+                        key={client.id}
+                        className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={inviteWorkspaceIds.includes(client.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setInviteWorkspaceIds([...inviteWorkspaceIds, client.id]);
+                            } else {
+                              setInviteWorkspaceIds(inviteWorkspaceIds.filter((id) => id !== client.id));
+                            }
+                          }}
+                          className="rounded border-input"
+                        />
+                        <span className="text-sm">{client.name}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                {inviteWorkspaceIds.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {inviteWorkspaceIds.length} workspace{inviteWorkspaceIds.length !== 1 ? 's' : ''} selected
+                  </p>
+                )}
               </div>
             </div>
           </DialogContent>
