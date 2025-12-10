@@ -34,26 +34,24 @@ export function CampaignCard({
 }: CampaignCardProps) {
   const navigate = useNavigate();
 
-  const getStatusVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      active: 'default',
-      pending: 'outline',
-      paused: 'secondary',
-      completed: 'secondary',
-      onboarding_required: 'outline',
+  const getStatusBadgeClass = (status: string): string => {
+    const classes: Record<string, string> = {
+      active: 'badge-status-active',
+      pending: 'badge-status-pending',
+      paused: 'badge-status-paused',
+      completed: 'badge-status-completed',
+      onboarding_required: 'badge-status-onboarding',
     };
-    return variants[status] || 'default';
+    return classes[status] || 'badge-status-paused';
+  };
+
+  const getPhaseBadgeClass = (status: string): string => {
+    // Determine phase based on status - active means Performance, others mean Sprint
+    return status === 'active' ? 'badge-phase-performance' : 'badge-phase-sprint';
   };
 
   const getPhaseLabel = (status: string): string => {
-    const phases: Record<string, string> = {
-      active: 'Performance Plan',
-      pending: 'Validation Sprint',
-      paused: 'On Hold',
-      completed: 'Completed',
-      onboarding_required: 'Onboarding Required',
-    };
-    return phases[status] || 'Unknown';
+    return status === 'active' ? 'Performance' : 'Sprint';
   };
 
   const getStatusLabel = (status: string): string => {
@@ -77,10 +75,10 @@ export function CampaignCard({
               {campaign.name}
             </h3>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="text-xs font-normal">
+              <Badge variant="outline" className={`text-xs font-normal ${getPhaseBadgeClass(campaign.status)}`}>
                 {getPhaseLabel(campaign.status)}
               </Badge>
-              <Badge variant={getStatusVariant(campaign.status)} className="capitalize text-xs">
+              <Badge variant="outline" className={`text-xs font-medium ${getStatusBadgeClass(campaign.status)}`}>
                 {getStatusLabel(campaign.status)}
               </Badge>
             </div>
