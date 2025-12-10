@@ -46,6 +46,7 @@ interface CampaignWithMetrics {
   name: string;
   status: string;
   phase: string | null;
+  target: string | null;
   created_at: string;
   attendedMeetings: number;
   upcomingMeetings: number;
@@ -107,7 +108,7 @@ export default function WorkspaceCampaigns() {
 
       const { data: campaignsData, error } = await supabase
         .from('campaigns')
-        .select('id, name, status, phase, created_at')
+        .select('id, name, status, phase, target, created_at')
         .eq('client_id', clientId)
         .is('deleted_at', null)
         .order('created_at', { ascending: false });

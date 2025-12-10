@@ -16,6 +16,7 @@ interface CampaignCardProps {
     name: string;
     status: string;
     phase: string | null;
+    target: string | null;
     attendedMeetings: number;
     upcomingMeetings: number;
     connectRate: number;
@@ -65,6 +66,10 @@ export function CampaignCard({
     return phase.toLowerCase() === 'performance' ? 'Performance' : 'Sprint';
   };
 
+  const getTargetLabel = (target: string): string => {
+    return target.charAt(0).toUpperCase() + target.slice(1).toLowerCase();
+  };
+
   return (
     <Card className="w-full hover:shadow-md transition-shadow border">
       <CardContent className="p-4 sm:p-5">
@@ -75,14 +80,19 @@ export function CampaignCard({
               {campaign.name}
             </h3>
             <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className={`text-xs font-medium ${getStatusBadgeClass(campaign.status)}`}>
+                {getStatusLabel(campaign.status)}
+              </Badge>
               {campaign.phase && (
                 <Badge variant="outline" className={`text-xs font-normal ${getPhaseBadgeClass(campaign.phase)}`}>
                   {getPhaseLabel(campaign.phase)}
                 </Badge>
               )}
-              <Badge variant="outline" className={`text-xs font-medium ${getStatusBadgeClass(campaign.status)}`}>
-                {getStatusLabel(campaign.status)}
-              </Badge>
+              {campaign.target && (
+                <Badge variant="outline" className="text-xs font-normal">
+                  {getTargetLabel(campaign.target)}
+                </Badge>
+              )}
             </div>
           </div>
 
