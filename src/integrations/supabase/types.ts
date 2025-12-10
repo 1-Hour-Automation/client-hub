@@ -212,87 +212,123 @@ export type Database = {
       }
       clients: {
         Row: {
+          account_manager: string | null
+          bdr_assigned: string | null
           best_times: string | null
           billing_address: string | null
           billing_contact_email: string | null
           billing_contact_name: string | null
           billing_contact_phone: string | null
           billing_notes: string | null
+          calling_hours: string | null
+          calling_timezone: string | null
+          campaign_start_date: string | null
           client_notes: string | null
           created_at: string
+          current_plan: string | null
           id: string
           invoice_method: string | null
           invoicing_frequency: string | null
+          last_updated_at: string | null
+          last_updated_by: string | null
           legal_business_name: string | null
           meeting_link: string | null
           name: string
+          performance_tier: string | null
+          phase_history: Json | null
           preferred_channel: string | null
           preferred_currency: string | null
           primary_contact_email: string | null
           primary_contact_name: string | null
           primary_contact_phone: string | null
           primary_contact_title: string | null
+          quarterly_attendance_guarantee: number | null
           registered_address: string | null
           registration_number: string | null
           secondary_contacts: Json | null
+          sending_email_address: string | null
           team_members_with_access: Json | null
           timezone: string | null
           vat_number: string | null
           website: string | null
         }
         Insert: {
+          account_manager?: string | null
+          bdr_assigned?: string | null
           best_times?: string | null
           billing_address?: string | null
           billing_contact_email?: string | null
           billing_contact_name?: string | null
           billing_contact_phone?: string | null
           billing_notes?: string | null
+          calling_hours?: string | null
+          calling_timezone?: string | null
+          campaign_start_date?: string | null
           client_notes?: string | null
           created_at?: string
+          current_plan?: string | null
           id?: string
           invoice_method?: string | null
           invoicing_frequency?: string | null
+          last_updated_at?: string | null
+          last_updated_by?: string | null
           legal_business_name?: string | null
           meeting_link?: string | null
           name: string
+          performance_tier?: string | null
+          phase_history?: Json | null
           preferred_channel?: string | null
           preferred_currency?: string | null
           primary_contact_email?: string | null
           primary_contact_name?: string | null
           primary_contact_phone?: string | null
           primary_contact_title?: string | null
+          quarterly_attendance_guarantee?: number | null
           registered_address?: string | null
           registration_number?: string | null
           secondary_contacts?: Json | null
+          sending_email_address?: string | null
           team_members_with_access?: Json | null
           timezone?: string | null
           vat_number?: string | null
           website?: string | null
         }
         Update: {
+          account_manager?: string | null
+          bdr_assigned?: string | null
           best_times?: string | null
           billing_address?: string | null
           billing_contact_email?: string | null
           billing_contact_name?: string | null
           billing_contact_phone?: string | null
           billing_notes?: string | null
+          calling_hours?: string | null
+          calling_timezone?: string | null
+          campaign_start_date?: string | null
           client_notes?: string | null
           created_at?: string
+          current_plan?: string | null
           id?: string
           invoice_method?: string | null
           invoicing_frequency?: string | null
+          last_updated_at?: string | null
+          last_updated_by?: string | null
           legal_business_name?: string | null
           meeting_link?: string | null
           name?: string
+          performance_tier?: string | null
+          phase_history?: Json | null
           preferred_channel?: string | null
           preferred_currency?: string | null
           primary_contact_email?: string | null
           primary_contact_name?: string | null
           primary_contact_phone?: string | null
           primary_contact_title?: string | null
+          quarterly_attendance_guarantee?: number | null
           registered_address?: string | null
           registration_number?: string | null
           secondary_contacts?: Json | null
+          sending_email_address?: string | null
           team_members_with_access?: Json | null
           timezone?: string | null
           vat_number?: string | null

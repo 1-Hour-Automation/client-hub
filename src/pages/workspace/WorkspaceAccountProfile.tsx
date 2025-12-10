@@ -13,6 +13,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDown, Plus, X, Save, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { format } from 'date-fns';
 
 interface SecondaryContact {
   name: string;
@@ -23,6 +25,27 @@ interface SecondaryContact {
 interface TeamMember {
   name: string;
   email: string;
+}
+
+interface PhaseHistoryEntry {
+  phase: string;
+  date: string;
+  updatedBy: string;
+}
+
+interface AccountData {
+  account_manager: string | null;
+  bdr_assigned: string | null;
+  campaign_start_date: string | null;
+  calling_timezone: string | null;
+  calling_hours: string | null;
+  sending_email_address: string | null;
+  current_plan: string | null;
+  performance_tier: string | null;
+  quarterly_attendance_guarantee: number | null;
+  phase_history: PhaseHistoryEntry[];
+  last_updated_by: string | null;
+  last_updated_at: string | null;
 }
 
 interface ClientData {
@@ -56,9 +79,24 @@ interface ClientData {
 export default function WorkspaceAccountProfile() {
   const { clientId } = useParams<{ clientId: string }>();
   const { toast } = useToast();
+  const { isInternalUser, profile } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [billingOpen, setBillingOpen] = useState(false);
+  const [accountData, setAccountData] = useState<AccountData>({
+    account_manager: null,
+    bdr_assigned: null,
+    campaign_start_date: null,
+    calling_timezone: null,
+    calling_hours: null,
+    sending_email_address: null,
+    current_plan: null,
+    performance_tier: null,
+    quarterly_attendance_guarantee: null,
+    phase_history: [],
+    last_updated_by: null,
+    last_updated_at: null,
+  });
   const [clientData, setClientData] = useState<ClientData>({
     name: '',
     legal_business_name: null,
@@ -131,6 +169,21 @@ export default function WorkspaceAccountProfile() {
           client_notes: data.client_notes,
         });
         
+        setAccountData({
+          account_manager: data.account_manager,
+          bdr_assigned: data.bdr_assigned,
+          campaign_start_date: data.campaign_start_date,
+          calling_timezone: data.calling_timezone,
+          calling_hours: data.calling_hours,
+          sending_email_address: data.sending_email_address,
+          current_plan: data.current_plan,
+          performance_tier: data.performance_tier,
+          quarterly_attendance_guarantee: data.quarterly_attendance_guarantee,
+          phase_history: (data.phase_history as unknown as PhaseHistoryEntry[]) || [],
+          last_updated_by: data.last_updated_by,
+          last_updated_at: data.last_updated_at,
+        });
+        
         // Open billing section if any billing data exists
         if (data.billing_contact_name || data.billing_contact_email || data.billing_contact_phone || data.invoice_method || data.billing_notes) {
           setBillingOpen(true);
@@ -144,6 +197,10 @@ export default function WorkspaceAccountProfile() {
 
   const updateField = (field: keyof ClientData, value: string | null) => {
     setClientData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const updateAccountField = (field: keyof AccountData, value: string | number | null) => {
+    setAccountData(prev => ({ ...prev, [field]: value }));
   };
 
   const addSecondaryContact = () => {
@@ -196,35 +253,53 @@ export default function WorkspaceAccountProfile() {
     if (!clientId) return;
     setIsSaving(true);
 
+    const updatePayload: Record<string, unknown> = {
+      name: clientData.name,
+      legal_business_name: clientData.legal_business_name || null,
+      website: clientData.website || null,
+      registered_address: clientData.registered_address || null,
+      billing_address: clientData.billing_address || null,
+      primary_contact_name: clientData.primary_contact_name || null,
+      primary_contact_title: clientData.primary_contact_title || null,
+      primary_contact_email: clientData.primary_contact_email || null,
+      primary_contact_phone: clientData.primary_contact_phone || null,
+      billing_contact_name: clientData.billing_contact_name || null,
+      billing_contact_email: clientData.billing_contact_email || null,
+      billing_contact_phone: clientData.billing_contact_phone || null,
+      invoice_method: clientData.invoice_method || null,
+      billing_notes: clientData.billing_notes || null,
+      secondary_contacts: clientData.secondary_contacts as unknown as Json,
+      team_members_with_access: clientData.team_members_with_access as unknown as Json,
+      registration_number: clientData.registration_number || null,
+      vat_number: clientData.vat_number || null,
+      preferred_currency: clientData.preferred_currency || 'GBP',
+      invoicing_frequency: clientData.invoicing_frequency || 'monthly',
+      preferred_channel: clientData.preferred_channel || null,
+      meeting_link: clientData.meeting_link || null,
+      best_times: clientData.best_times || null,
+      timezone: clientData.timezone || null,
+      client_notes: clientData.client_notes || null,
+    };
+
+    // Add account fields only for internal users
+    if (isInternalUser) {
+      updatePayload.account_manager = accountData.account_manager || null;
+      updatePayload.bdr_assigned = accountData.bdr_assigned || null;
+      updatePayload.campaign_start_date = accountData.campaign_start_date || null;
+      updatePayload.calling_timezone = accountData.calling_timezone || null;
+      updatePayload.calling_hours = accountData.calling_hours || null;
+      updatePayload.sending_email_address = accountData.sending_email_address || null;
+      updatePayload.current_plan = accountData.current_plan || null;
+      updatePayload.performance_tier = accountData.performance_tier || null;
+      updatePayload.quarterly_attendance_guarantee = accountData.quarterly_attendance_guarantee || null;
+      updatePayload.phase_history = accountData.phase_history as unknown as Json;
+      updatePayload.last_updated_by = profile?.display_name || 'Unknown';
+      updatePayload.last_updated_at = new Date().toISOString();
+    }
+
     const { error } = await supabase
       .from('clients')
-      .update({
-        name: clientData.name,
-        legal_business_name: clientData.legal_business_name || null,
-        website: clientData.website || null,
-        registered_address: clientData.registered_address || null,
-        billing_address: clientData.billing_address || null,
-        primary_contact_name: clientData.primary_contact_name || null,
-        primary_contact_title: clientData.primary_contact_title || null,
-        primary_contact_email: clientData.primary_contact_email || null,
-        primary_contact_phone: clientData.primary_contact_phone || null,
-        billing_contact_name: clientData.billing_contact_name || null,
-        billing_contact_email: clientData.billing_contact_email || null,
-        billing_contact_phone: clientData.billing_contact_phone || null,
-        invoice_method: clientData.invoice_method || null,
-        billing_notes: clientData.billing_notes || null,
-        secondary_contacts: clientData.secondary_contacts as unknown as Json,
-        team_members_with_access: clientData.team_members_with_access as unknown as Json,
-        registration_number: clientData.registration_number || null,
-        vat_number: clientData.vat_number || null,
-        preferred_currency: clientData.preferred_currency || 'GBP',
-        invoicing_frequency: clientData.invoicing_frequency || 'monthly',
-        preferred_channel: clientData.preferred_channel || null,
-        meeting_link: clientData.meeting_link || null,
-        best_times: clientData.best_times || null,
-        timezone: clientData.timezone || null,
-        client_notes: clientData.client_notes || null,
-      })
+      .update(updatePayload)
       .eq('id', clientId);
 
     setIsSaving(false);
@@ -232,6 +307,13 @@ export default function WorkspaceAccountProfile() {
     if (error) {
       toast({ title: 'Error saving', description: error.message, variant: 'destructive' });
     } else {
+      if (isInternalUser) {
+        setAccountData(prev => ({
+          ...prev,
+          last_updated_by: profile?.display_name || 'Unknown',
+          last_updated_at: new Date().toISOString(),
+        }));
+      }
       toast({ title: 'Saved successfully' });
     }
   };
@@ -652,8 +734,177 @@ export default function WorkspaceAccountProfile() {
             <CardHeader>
               <CardTitle>Account Information</CardTitle>
             </CardHeader>
-            <CardContent>
-              {/* Fields will be added here */}
+            <CardContent className="space-y-6">
+              {/* Account Management */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-foreground">Account Management</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="account_manager">Account Manager</Label>
+                    <Input
+                      id="account_manager"
+                      value={accountData.account_manager || ''}
+                      onChange={(e) => updateAccountField('account_manager', e.target.value)}
+                      placeholder="Account manager name"
+                      disabled={!isInternalUser}
+                      className={!isInternalUser ? 'bg-muted' : ''}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bdr_assigned">BDR Assigned</Label>
+                    <Input
+                      id="bdr_assigned"
+                      value={accountData.bdr_assigned || ''}
+                      onChange={(e) => updateAccountField('bdr_assigned', e.target.value)}
+                      placeholder="BDR name"
+                      disabled={!isInternalUser}
+                      className={!isInternalUser ? 'bg-muted' : ''}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Campaign Settings */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-foreground">Campaign Settings</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="campaign_start_date">Campaign Start Date</Label>
+                    <Input
+                      id="campaign_start_date"
+                      type="date"
+                      value={accountData.campaign_start_date || ''}
+                      onChange={(e) => updateAccountField('campaign_start_date', e.target.value)}
+                      disabled={!isInternalUser}
+                      className={!isInternalUser ? 'bg-muted' : ''}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="calling_timezone">Calling Timezone</Label>
+                    <Select
+                      value={accountData.calling_timezone || ''}
+                      onValueChange={(value) => updateAccountField('calling_timezone', value)}
+                      disabled={!isInternalUser}
+                    >
+                      <SelectTrigger id="calling_timezone" className={!isInternalUser ? 'bg-muted' : ''}>
+                        <SelectValue placeholder="Select timezone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Europe/London">UK (GMT/BST)</SelectItem>
+                        <SelectItem value="America/New_York">US Eastern</SelectItem>
+                        <SelectItem value="America/Los_Angeles">US Pacific</SelectItem>
+                        <SelectItem value="Europe/Paris">Central European</SelectItem>
+                        <SelectItem value="Asia/Singapore">Singapore</SelectItem>
+                        <SelectItem value="Australia/Sydney">Sydney</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="calling_hours">Calling Hours</Label>
+                    <Input
+                      id="calling_hours"
+                      value={accountData.calling_hours || ''}
+                      onChange={(e) => updateAccountField('calling_hours', e.target.value)}
+                      placeholder="e.g., 9am - 5pm"
+                      disabled={!isInternalUser}
+                      className={!isInternalUser ? 'bg-muted' : ''}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sending_email">Sending Email Address</Label>
+                    <Input
+                      id="sending_email"
+                      type="email"
+                      value={accountData.sending_email_address || ''}
+                      onChange={(e) => updateAccountField('sending_email_address', e.target.value)}
+                      placeholder="outreach@domain.com"
+                      disabled={!isInternalUser}
+                      className={!isInternalUser ? 'bg-muted' : ''}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Plan & Performance */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-foreground">Plan & Performance</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="current_plan">Current Plan</Label>
+                    <Select
+                      value={accountData.current_plan || ''}
+                      onValueChange={(value) => updateAccountField('current_plan', value)}
+                      disabled={!isInternalUser}
+                    >
+                      <SelectTrigger id="current_plan" className={!isInternalUser ? 'bg-muted' : ''}>
+                        <SelectValue placeholder="Select plan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sprint">Sprint</SelectItem>
+                        <SelectItem value="performance">Performance</SelectItem>
+                        <SelectItem value="enterprise">Enterprise</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="performance_tier">Performance Tier</Label>
+                    <Select
+                      value={accountData.performance_tier || ''}
+                      onValueChange={(value) => updateAccountField('performance_tier', value)}
+                      disabled={!isInternalUser}
+                    >
+                      <SelectTrigger id="performance_tier" className={!isInternalUser ? 'bg-muted' : ''}>
+                        <SelectValue placeholder="Select tier (if applicable)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="tier_1">Tier 1</SelectItem>
+                        <SelectItem value="tier_2">Tier 2</SelectItem>
+                        <SelectItem value="tier_3">Tier 3</SelectItem>
+                        <SelectItem value="tier_4">Tier 4</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="quarterly_guarantee">Quarterly Attendance Guarantee</Label>
+                    <Input
+                      id="quarterly_guarantee"
+                      type="number"
+                      value={accountData.quarterly_attendance_guarantee || ''}
+                      onChange={(e) => updateAccountField('quarterly_attendance_guarantee', e.target.value ? parseInt(e.target.value) : null)}
+                      placeholder="Number of meetings"
+                      disabled={!isInternalUser}
+                      className={!isInternalUser ? 'bg-muted' : ''}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Phase History */}
+              {accountData.phase_history.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-foreground">Phase History</h3>
+                  <div className="space-y-2">
+                    {accountData.phase_history.map((entry, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg text-sm">
+                        <span className="font-medium">{entry.phase}</span>
+                        <span className="text-muted-foreground">
+                          {entry.date} • {entry.updatedBy}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Last Updated */}
+              {accountData.last_updated_at && (
+                <div className="pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Last updated by <span className="font-medium text-foreground">{accountData.last_updated_by || 'Unknown'}</span>
+                    {' '}on {format(new Date(accountData.last_updated_at), 'PPp')}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
