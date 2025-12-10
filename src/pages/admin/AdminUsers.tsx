@@ -240,10 +240,6 @@ export default function AdminUsers() {
       },
     },
     {
-      header: 'Assigned Client',
-      accessor: (row: UserRow) => row.client_name || '—',
-    },
-    {
       header: 'Created',
       accessor: (row: UserRow) => format(new Date(row.created_at), 'MMM d, yyyy'),
     },
