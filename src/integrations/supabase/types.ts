@@ -212,19 +212,91 @@ export type Database = {
       }
       clients: {
         Row: {
+          best_times: string | null
+          billing_address: string | null
+          billing_contact_email: string | null
+          billing_contact_name: string | null
+          billing_contact_phone: string | null
+          billing_notes: string | null
+          client_notes: string | null
           created_at: string
           id: string
+          invoice_method: string | null
+          invoicing_frequency: string | null
+          legal_business_name: string | null
+          meeting_link: string | null
           name: string
+          preferred_channel: string | null
+          preferred_currency: string | null
+          primary_contact_email: string | null
+          primary_contact_name: string | null
+          primary_contact_phone: string | null
+          primary_contact_title: string | null
+          registered_address: string | null
+          registration_number: string | null
+          secondary_contacts: Json | null
+          team_members_with_access: Json | null
+          timezone: string | null
+          vat_number: string | null
+          website: string | null
         }
         Insert: {
+          best_times?: string | null
+          billing_address?: string | null
+          billing_contact_email?: string | null
+          billing_contact_name?: string | null
+          billing_contact_phone?: string | null
+          billing_notes?: string | null
+          client_notes?: string | null
           created_at?: string
           id?: string
+          invoice_method?: string | null
+          invoicing_frequency?: string | null
+          legal_business_name?: string | null
+          meeting_link?: string | null
           name: string
+          preferred_channel?: string | null
+          preferred_currency?: string | null
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
+          primary_contact_phone?: string | null
+          primary_contact_title?: string | null
+          registered_address?: string | null
+          registration_number?: string | null
+          secondary_contacts?: Json | null
+          team_members_with_access?: Json | null
+          timezone?: string | null
+          vat_number?: string | null
+          website?: string | null
         }
         Update: {
+          best_times?: string | null
+          billing_address?: string | null
+          billing_contact_email?: string | null
+          billing_contact_name?: string | null
+          billing_contact_phone?: string | null
+          billing_notes?: string | null
+          client_notes?: string | null
           created_at?: string
           id?: string
+          invoice_method?: string | null
+          invoicing_frequency?: string | null
+          legal_business_name?: string | null
+          meeting_link?: string | null
           name?: string
+          preferred_channel?: string | null
+          preferred_currency?: string | null
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
+          primary_contact_phone?: string | null
+          primary_contact_title?: string | null
+          registered_address?: string | null
+          registration_number?: string | null
+          secondary_contacts?: Json | null
+          team_members_with_access?: Json | null
+          timezone?: string | null
+          vat_number?: string | null
+          website?: string | null
         }
         Relationships: []
       }
