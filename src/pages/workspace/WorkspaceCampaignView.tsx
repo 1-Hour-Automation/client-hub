@@ -558,6 +558,30 @@ export default function WorkspaceCampaignView() {
               </Alert>
             )}
 
+            {/* Campaign Overview Card */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Campaign Overview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={getStatusBadgeClass(campaign.status)}>
+                    {getStatusLabel(campaign.status)}
+                  </Badge>
+                  {campaign.phase && (
+                    <Badge variant="outline" className={getPhaseBadgeClass(campaign.phase)}>
+                      {getPhaseLabel(campaign.phase)}
+                    </Badge>
+                  )}
+                  {campaign.target && (
+                    <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200/50 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700/40 capitalize">
+                      {campaign.target}
+                    </Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Core KPI Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card>
@@ -603,24 +627,7 @@ export default function WorkspaceCampaignView() {
               {/* Calling Performance Metrics */}
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">Calling Performance Metrics</CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={getStatusBadgeClass(campaign.status)}>
-                        {getStatusLabel(campaign.status)}
-                      </Badge>
-                      {campaign.phase && (
-                        <Badge variant="outline" className={getPhaseBadgeClass(campaign.phase)}>
-                          {getPhaseLabel(campaign.phase)}
-                        </Badge>
-                      )}
-                      {campaign.target && (
-                        <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200/50 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700/40 capitalize">
-                          {campaign.target}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
+                  <CardTitle className="text-base">Calling Performance Metrics</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between text-sm">
