@@ -54,9 +54,20 @@ interface CampaignWithMetrics {
 
 const STATUS_ORDER: Record<string, number> = {
   active: 0,
+  onboarding_required: 1,
   pending: 1,
   paused: 2,
   completed: 3,
+};
+
+// Map backend statuses to filter categories
+const getFilterCategory = (status: string): string => {
+  switch (status) {
+    case 'onboarding_required':
+      return 'pending';
+    default:
+      return status;
+  }
 };
 
 export default function WorkspaceCampaigns() {
@@ -309,7 +320,7 @@ export default function WorkspaceCampaigns() {
     let filtered = campaigns;
     
     if (activeFilter !== 'all') {
-      filtered = campaigns.filter(c => c.status === activeFilter);
+      filtered = campaigns.filter(c => getFilterCategory(c.status) === activeFilter);
     }
 
     return [...filtered].sort((a, b) => {
