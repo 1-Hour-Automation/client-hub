@@ -39,27 +39,23 @@ function getStatusBadgeVariant(status: string): 'default' | 'secondary' | 'outli
   }
 }
 
-function getStatusLabel(status: string): string {
-  switch (status.toLowerCase()) {
-    case 'active':
-      return 'Active';
-    case 'paused':
-      return 'Paused';
-    case 'completed':
-      return 'Completed';
-    case 'onboarding_required':
-      return 'Onboarding';
+
+function getPhaseBadgeVariant(phase: string): 'default' | 'secondary' | 'outline' {
+  switch (phase.toLowerCase()) {
+    case 'sprint':
+      return 'default';
+    case 'performance':
+      return 'secondary';
     default:
-      return status;
+      return 'outline';
   }
 }
 
-function getPhaseBadgeVariant(phase: string): 'default' | 'secondary' {
-  return phase.toLowerCase() === 'performance' ? 'secondary' : 'default';
-}
-
-function getPhaseLabel(phase: string): string {
-  return phase.toLowerCase() === 'performance' ? 'Performance' : 'Sprint';
+function formatLabel(value: string): string {
+  return value
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
 }
 
 export function CampaignOverviewTable({ campaigns, clientId, isLoading }: CampaignOverviewTableProps) {
@@ -115,9 +111,9 @@ export function CampaignOverviewTable({ campaigns, clientId, isLoading }: Campai
           </TableHeader>
           <TableBody>
             {campaigns.map((campaign) => {
-              const phaseLabel = getPhaseLabel(campaign.phase);
+              const phaseLabel = formatLabel(campaign.phase);
               const phaseBadgeVariant = getPhaseBadgeVariant(campaign.phase);
-              const statusLabel = getStatusLabel(campaign.status);
+              const statusLabel = formatLabel(campaign.status);
               const statusBadgeVariant = getStatusBadgeVariant(campaign.status);
               return (
                 <TableRow 
