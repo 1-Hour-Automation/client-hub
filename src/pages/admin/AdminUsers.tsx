@@ -13,6 +13,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -21,7 +27,7 @@ import {
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { UserCog, Shield, Edit, UserPlus } from 'lucide-react';
+import { UserCog, Shield, Edit, UserPlus, Building2, Plus, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 
@@ -55,6 +61,7 @@ export default function AdminUsers() {
   const [inviteName, setInviteName] = useState('');
   const [inviteRole, setInviteRole] = useState<string>('');
   const [inviteClientId, setInviteClientId] = useState<string>('');
+  const [workspaceDrawerUser, setWorkspaceDrawerUser] = useState<UserRow | null>(null);
   const { toast } = useToast();
 
   async function fetchData() {
@@ -217,6 +224,20 @@ export default function AdminUsers() {
     {
       header: 'Roles',
       accessor: (row: UserRow) => getRoleBadges(row.roles),
+    },
+    {
+      header: 'Workspaces',
+      accessor: (row: UserRow) => {
+        const count = row.client_id ? 1 : 0;
+        return (
+          <button
+            onClick={() => setWorkspaceDrawerUser(row)}
+            className="text-primary hover:underline font-medium"
+          >
+            {count}
+          </button>
+        );
+      },
     },
     {
       header: 'Assigned Client',
@@ -395,6 +416,57 @@ export default function AdminUsers() {
             </div>
           </DialogContent>
         </Dialog>
+
+        <Sheet open={!!workspaceDrawerUser} onOpenChange={() => setWorkspaceDrawerUser(null)}>
+          <SheetContent side="right" className="w-[400px] sm:w-[480px]">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Workspaces for {workspaceDrawerUser?.display_name || 'User'}
+              </SheetTitle>
+            </SheetHeader>
+            {workspaceDrawerUser && (
+              <div className="mt-6 space-y-6">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">Manage workspace assignments</p>
+                  <Button size="sm" variant="outline">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Workspace
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  {workspaceDrawerUser.client_id && workspaceDrawerUser.client_name ? (
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium">{workspaceDrawerUser.client_name}</p>
+                        <div className="flex gap-1 mt-1">
+                          {workspaceDrawerUser.roles.map((role) => (
+                            <Badge
+                              key={role}
+                              variant={role === 'admin' ? 'default' : role === 'bdr' ? 'secondary' : 'outline'}
+                              className="text-xs"
+                            >
+                              {role}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Building2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>No workspaces assigned</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
       </div>
     </AppLayout>
   );
