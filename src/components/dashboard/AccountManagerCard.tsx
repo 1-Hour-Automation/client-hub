@@ -26,18 +26,7 @@ export function AccountManagerCard({ name, email, meetingLink, isLoading }: Acco
     );
   }
 
-  if (!name) {
-    return (
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Your Account Manager</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <p className="text-sm text-muted-foreground">Not yet assigned</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  const hasMeetingLink = Boolean(meetingLink);
 
   return (
     <Card className="bg-card border-border">
@@ -46,23 +35,38 @@ export function AccountManagerCard({ name, email, meetingLink, isLoading }: Acco
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
         <div>
-          <p className="font-medium text-foreground">{name}</p>
-          {email && (
+          <p className="font-medium text-foreground">{name || 'Not yet assigned'}</p>
+          {name && email && (
             <p className="text-sm text-muted-foreground">{email}</p>
           )}
         </div>
-        {meetingLink && (
+        
+        {hasMeetingLink ? (
           <Button 
             variant="outline" 
             size="sm" 
             className="w-full"
             asChild
           >
-            <a href={meetingLink} target="_blank" rel="noopener noreferrer">
+            <a href={meetingLink!} target="_blank" rel="noopener noreferrer">
               Book Review Call
               <ExternalLink className="h-3.5 w-3.5 ml-2" />
             </a>
           </Button>
+        ) : (
+          <div className="space-y-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full"
+              disabled
+            >
+              Book Review Call (Coming Soon)
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Your review meeting link will be available once this workspace is fully set up.
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>
