@@ -22,6 +22,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { UserCog, Shield, Edit, UserPlus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 
 type AppRole = 'admin' | 'bdr' | 'client';
@@ -50,6 +51,10 @@ export default function AdminUsers() {
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
+  const [inviteRole, setInviteRole] = useState<string>('');
+  const [inviteClientId, setInviteClientId] = useState<string>('');
   const { toast } = useToast();
 
   async function fetchData() {
@@ -336,6 +341,58 @@ export default function AdminUsers() {
                 Invite New User
               </DialogTitle>
             </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div className="space-y-2">
+                <Label>Email <span className="text-destructive">*</span></Label>
+                <Input
+                  type="email"
+                  placeholder="user@example.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Name</Label>
+                <Input
+                  type="text"
+                  placeholder="Full name (optional)"
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Role</Label>
+                <Select value={inviteRole} onValueChange={setInviteRole}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="bdr">BDR</SelectItem>
+                    <SelectItem value="am">AM</SelectItem>
+                    <SelectItem value="client">Client</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Assigned Client Workspace</Label>
+                <Select value={inviteClientId} onValueChange={setInviteClientId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
