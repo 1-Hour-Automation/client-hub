@@ -257,7 +257,7 @@ export default function AdminUsers() {
     }
     return <div className="flex gap-1 flex-wrap">
         {roles.map(role => <Badge key={role} variant={role === 'admin' ? 'default' : role === 'bdr' ? 'secondary' : 'outline'}>
-            {role}
+            {roleLabels[role]}
           </Badge>)}
       </div>;
   };
@@ -443,7 +443,7 @@ export default function AdminUsers() {
                         <p className="font-medium">{workspaceDrawerUser.client_name}</p>
                         <div className="flex gap-1 mt-1">
                           {workspaceDrawerUser.roles.map(role => <Badge key={role} variant={role === 'admin' ? 'default' : role === 'bdr' ? 'secondary' : 'outline'} className="text-xs">
-                              {role}
+                              {roleLabels[role]}
                             </Badge>)}
                         </div>
                       </div>
