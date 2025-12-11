@@ -55,7 +55,7 @@ export default function AdminUsers() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<UserRow | null>(null);
-  const [selectedRoles, setSelectedRoles] = useState<AppRole[]>([]);
+  const [selectedRole, setSelectedRole] = useState<AppRole | ''>('');
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -129,21 +129,21 @@ export default function AdminUsers() {
 
   function openEditDialog(user: UserRow) {
     setEditingUser(user);
-    setSelectedRoles(user.roles);
+    setSelectedRole(user.roles[0] || '');
     setSelectedClientId(user.client_id || '');
   }
 
   function closeEditDialog() {
     setEditingUser(null);
-    setSelectedRoles([]);
+    setSelectedRole('');
     setSelectedClientId('');
   }
 
-  function toggleRole(role: AppRole) {
-    setSelectedRoles((prev) =>
-      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
-    );
-  }
+  const roleLabels: Record<AppRole, string> = {
+    admin: 'Admin',
+    bdr: 'BDR',
+    client: 'Client',
+  };
 
   async function handleSaveRoles() {
     if (!editingUser) return;
@@ -152,11 +152,10 @@ export default function AdminUsers() {
     try {
       // Get current roles for this user
       const currentRoles = editingUser.roles;
-      const rolesToAdd = selectedRoles.filter((r) => !currentRoles.includes(r));
-      const rolesToRemove = currentRoles.filter((r) => !selectedRoles.includes(r));
-
-      // Remove old roles
-      for (const role of rolesToRemove) {
+      const newRole = selectedRole;
+      
+      // Remove all existing roles
+      for (const role of currentRoles) {
         const { error } = await supabase
           .from('user_roles')
           .delete()
@@ -165,11 +164,11 @@ export default function AdminUsers() {
         if (error) throw error;
       }
 
-      // Add new roles
-      for (const role of rolesToAdd) {
+      // Add the new role if selected
+      if (newRole) {
         const { error } = await supabase
           .from('user_roles')
-          .insert({ user_id: editingUser.id, role });
+          .insert({ user_id: editingUser.id, role: newRole });
         if (error) throw error;
       }
 
@@ -183,7 +182,7 @@ export default function AdminUsers() {
         if (error) throw error;
       }
 
-      toast({ title: 'User updated', description: 'Roles and permissions have been saved.' });
+      toast({ title: 'User updated', description: 'Role and permissions have been saved.' });
       closeEditDialog();
       fetchData();
     } catch (error) {
@@ -394,17 +393,17 @@ export default function AdminUsers() {
                 </div>
 
                 <div className="space-y-3">
-                  <Label>Roles</Label>
+                  <Label>Role</Label>
                   <div className="flex gap-2">
                     {(['admin', 'bdr', 'client'] as AppRole[]).map((role) => (
                       <Button
                         key={role}
                         type="button"
-                        variant={selectedRoles.includes(role) ? 'default' : 'outline'}
+                        variant={selectedRole === role ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => toggleRole(role)}
+                        onClick={() => setSelectedRole(role)}
                       >
-                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                        {roleLabels[role]}
                       </Button>
                     ))}
                   </div>
