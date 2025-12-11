@@ -61,6 +61,7 @@ export default function AdminUsers() {
   const [inviteName, setInviteName] = useState('');
   const [inviteRole, setInviteRole] = useState<string>('');
   const [inviteWorkspaceIds, setInviteWorkspaceIds] = useState<string[]>([]);
+  const [isInviting, setIsInviting] = useState(false);
   const [workspaceDrawerUser, setWorkspaceDrawerUser] = useState<UserRow | null>(null);
   const { toast } = useToast();
 
@@ -190,6 +191,54 @@ export default function AdminUsers() {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleInviteUser() {
+    if (!inviteEmail.trim()) {
+      toast({ title: 'Email is required', variant: 'destructive' });
+      return;
+    }
+
+    if (!inviteRole) {
+      toast({ title: 'Please select a role', variant: 'destructive' });
+      return;
+    }
+
+    setIsInviting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('invite-user', {
+        body: {
+          email: inviteEmail.trim(),
+          name: inviteName.trim() || undefined,
+          role: inviteRole,
+          workspaceIds: inviteWorkspaceIds,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({ 
+        title: 'Invitation sent', 
+        description: `An invitation email has been sent to ${inviteEmail}` 
+      });
+      
+      setIsInviteModalOpen(false);
+      setInviteEmail('');
+      setInviteName('');
+      setInviteRole('');
+      setInviteWorkspaceIds([]);
+      fetchData();
+    } catch (error: any) {
+      console.error('Failed to invite user:', error);
+      toast({
+        title: 'Failed to send invitation',
+        description: error.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsInviting(false);
     }
   }
 
@@ -431,20 +480,10 @@ export default function AdminUsers() {
 
               <Button 
                 className="w-full" 
-                disabled={!inviteEmail.trim()}
-                onClick={() => {
-                  toast({ 
-                    title: 'Coming Soon', 
-                    description: 'User invitation functionality will be available soon.' 
-                  });
-                  setIsInviteModalOpen(false);
-                  setInviteEmail('');
-                  setInviteName('');
-                  setInviteRole('');
-                  setInviteWorkspaceIds([]);
-                }}
+                disabled={!inviteEmail.trim() || !inviteRole || isInviting}
+                onClick={handleInviteUser}
               >
-                Send Invite
+                {isInviting ? 'Sending...' : 'Send Invite'}
               </Button>
             </div>
           </DialogContent>
