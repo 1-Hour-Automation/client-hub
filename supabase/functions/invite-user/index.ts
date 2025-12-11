@@ -77,8 +77,15 @@ serve(async (req: Request): Promise<Response> => {
     // Create admin client for user management
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Get the site URL from request origin or use a configured URL
+    const origin = req.headers.get("origin") || Deno.env.get("SITE_URL") || "";
+    const redirectTo = `${origin}/auth`;
+    
+    console.log(`Using redirect URL: ${redirectTo}`);
+
     // Invite the user via Supabase Auth
     const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
+      redirectTo,
       data: {
         display_name: name || email.split("@")[0],
         invited_role: role,
