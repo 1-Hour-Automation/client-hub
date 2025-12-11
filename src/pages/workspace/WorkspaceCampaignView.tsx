@@ -29,6 +29,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { ArrowLeft, AlertTriangle, Calendar, Users, Phone, MessageSquare, Clock, Globe, Link, User, CheckCircle, Percent, PhoneCall, Send, ClipboardList, Rocket, MoreHorizontal, Copy, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CampaignOnboardingForm } from '@/components/campaigns/CampaignOnboardingForm';
+import { CandidateOnboardingForm, CandidateOnboardingData } from '@/components/campaigns/CandidateOnboardingForm';
+import { CandidateOnboardingSummary } from '@/components/campaigns/CandidateOnboardingSummary';
 import { CreatePerformancePlanModal } from '@/components/campaigns/CreatePerformancePlanModal';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format, startOfQuarter, addDays, startOfMonth, endOfMonth } from 'date-fns';
@@ -72,6 +74,7 @@ interface CampaignDetails {
   onboarding_target_timezone: string | null;
   onboarding_booking_instructions: string | null;
   onboarding_bdr_notes: string | null;
+  candidate_onboarding_data: CandidateOnboardingData | null;
 }
 
 interface CampaignMetrics {
@@ -118,6 +121,7 @@ export default function WorkspaceCampaignView() {
   const [meetingStatusFilter, setMeetingStatusFilter] = useState<MeetingStatusFilter>('all');
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [isPerformanceModalOpen, setIsPerformanceModalOpen] = useState(false);
+  const [candidateOnboardingEditMode, setCandidateOnboardingEditMode] = useState(false);
   
   // Delete/Duplicate state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -127,6 +131,14 @@ export default function WorkspaceCampaignView() {
 
   const handleOnboardingCompleted = useCallback(() => {
     setOnboardingCompleted(true);
+  }, []);
+
+  const handleCandidateOnboardingCompleted = useCallback(() => {
+    setCandidateOnboardingEditMode(false);
+  }, []);
+
+  const handleCandidateDataUpdated = useCallback((data: CandidateOnboardingData) => {
+    setCampaign(prev => prev ? { ...prev, candidate_onboarding_data: data } : null);
   }, []);
 
   useEffect(() => {
@@ -158,7 +170,10 @@ export default function WorkspaceCampaignView() {
           return;
         }
 
-        setCampaign(campaignData);
+        setCampaign({
+          ...campaignData,
+          candidate_onboarding_data: campaignData.candidate_onboarding_data as CandidateOnboardingData | null,
+        });
         setOnboardingCompleted(!!campaignData.onboarding_completed_at);
 
         // Fetch BDR name if assigned
@@ -686,33 +701,62 @@ export default function WorkspaceCampaignView() {
           </TabsContent>
 
           <TabsContent value="onboarding" className="space-y-6">
-            <CampaignOnboardingForm
-              campaignId={campaignId!}
-              isCompleted={onboardingCompleted}
-              onCompleted={handleOnboardingCompleted}
-              initialData={campaign ? {
-                target_job_titles: campaign.onboarding_target_job_titles || '',
-                industries_to_target: campaign.onboarding_industries_to_target || '',
-                company_size_range: campaign.onboarding_company_size_range || '',
-                required_skills: campaign.onboarding_required_skills || '',
-                locations_to_target: campaign.onboarding_locations_to_target || '',
-                excluded_industries: campaign.onboarding_excluded_industries || '',
-                example_ideal_companies: campaign.onboarding_example_ideal_companies || '',
-                value_proposition: campaign.onboarding_value_proposition || '',
-                key_pain_points: campaign.onboarding_key_pain_points || '',
-                unique_differentiator: campaign.onboarding_unique_differentiator || '',
-                example_messaging: campaign.onboarding_example_messaging || '',
-                common_objections: campaign.onboarding_common_objections || '',
-                recommended_responses: campaign.onboarding_recommended_responses || '',
-                compliance_notes: campaign.onboarding_compliance_notes || '',
-                qualified_prospect_definition: campaign.onboarding_qualified_prospect_definition || '',
-                disqualifying_factors: campaign.onboarding_disqualifying_factors || '',
-                scheduling_link: campaign.onboarding_scheduling_link || '',
-                target_timezone: campaign.onboarding_target_timezone || '',
-                booking_instructions: campaign.onboarding_booking_instructions || '',
-                bdr_notes: campaign.onboarding_bdr_notes || '',
-              } : undefined}
-            />
+            {/* Candidate Onboarding */}
+            {campaign.target === 'Candidate' && (
+              <>
+                {campaign.candidate_onboarding_data?.completed_at && !candidateOnboardingEditMode ? (
+                  <CandidateOnboardingSummary
+                    data={campaign.candidate_onboarding_data}
+                    campaignName={campaign.name}
+                    workspaceName={clientName}
+                    isInternalUser={isInternalUser}
+                    onEditClick={() => setCandidateOnboardingEditMode(true)}
+                  />
+                ) : (
+                  <CandidateOnboardingForm
+                    campaignId={campaignId!}
+                    campaignName={campaign.name}
+                    workspaceName={clientName}
+                    roleTitles={campaign.candidate_onboarding_data?.role_titles}
+                    initialData={campaign.candidate_onboarding_data}
+                    isInternalUser={isInternalUser}
+                    onCompleted={handleCandidateOnboardingCompleted}
+                    onDataUpdated={handleCandidateDataUpdated}
+                  />
+                )}
+              </>
+            )}
+
+            {/* Client Onboarding (existing) */}
+            {campaign.target !== 'Candidate' && (
+              <CampaignOnboardingForm
+                campaignId={campaignId!}
+                isCompleted={onboardingCompleted}
+                onCompleted={handleOnboardingCompleted}
+                initialData={campaign ? {
+                  target_job_titles: campaign.onboarding_target_job_titles || '',
+                  industries_to_target: campaign.onboarding_industries_to_target || '',
+                  company_size_range: campaign.onboarding_company_size_range || '',
+                  required_skills: campaign.onboarding_required_skills || '',
+                  locations_to_target: campaign.onboarding_locations_to_target || '',
+                  excluded_industries: campaign.onboarding_excluded_industries || '',
+                  example_ideal_companies: campaign.onboarding_example_ideal_companies || '',
+                  value_proposition: campaign.onboarding_value_proposition || '',
+                  key_pain_points: campaign.onboarding_key_pain_points || '',
+                  unique_differentiator: campaign.onboarding_unique_differentiator || '',
+                  example_messaging: campaign.onboarding_example_messaging || '',
+                  common_objections: campaign.onboarding_common_objections || '',
+                  recommended_responses: campaign.onboarding_recommended_responses || '',
+                  compliance_notes: campaign.onboarding_compliance_notes || '',
+                  qualified_prospect_definition: campaign.onboarding_qualified_prospect_definition || '',
+                  disqualifying_factors: campaign.onboarding_disqualifying_factors || '',
+                  scheduling_link: campaign.onboarding_scheduling_link || '',
+                  target_timezone: campaign.onboarding_target_timezone || '',
+                  booking_instructions: campaign.onboarding_booking_instructions || '',
+                  bdr_notes: campaign.onboarding_bdr_notes || '',
+                } : undefined}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="meetings" className="space-y-6">
