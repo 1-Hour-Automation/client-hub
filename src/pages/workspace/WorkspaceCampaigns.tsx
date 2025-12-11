@@ -71,6 +71,11 @@ const getFilterCategory = (status: string): string => {
   }
 };
 
+interface BdrUser {
+  id: string;
+  display_name: string | null;
+}
+
 export default function WorkspaceCampaigns() {
   const { clientId } = useParams<{ clientId: string }>();
   const navigate = useNavigate();
@@ -79,9 +84,11 @@ export default function WorkspaceCampaigns() {
   const [campaigns, setCampaigns] = useState<CampaignWithMetrics[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newCampaign, setNewCampaign] = useState({ name: '', target: '' });
+  const [newCampaign, setNewCampaign] = useState({ name: '', target: '', bdrAssignedId: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
+  const [bdrUsers, setBdrUsers] = useState<BdrUser[]>([]);
+  const [isBdrLoading, setIsBdrLoading] = useState(false);
   const { toast } = useToast();
 
   // Delete confirmation state
@@ -169,9 +176,53 @@ export default function WorkspaceCampaigns() {
     fetchData();
   }, [clientId]);
 
+  // Fetch BDR users when dialog opens
+  useEffect(() => {
+    async function fetchBdrUsers() {
+      if (!isDialogOpen) return;
+      
+      setIsBdrLoading(true);
+      try {
+        // Get all user IDs with BDR role
+        const { data: bdrRoles, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .eq('role', 'bdr');
+
+        if (rolesError) throw rolesError;
+
+        if (!bdrRoles || bdrRoles.length === 0) {
+          setBdrUsers([]);
+          return;
+        }
+
+        // Get profiles for those users
+        const userIds = bdrRoles.map(r => r.user_id);
+        const { data: profiles, error: profilesError } = await supabase
+          .from('user_profiles')
+          .select('id, display_name')
+          .in('id', userIds);
+
+        if (profilesError) throw profilesError;
+
+        setBdrUsers(profiles || []);
+      } catch (error) {
+        console.error('Failed to fetch BDR users:', error);
+        setBdrUsers([]);
+      } finally {
+        setIsBdrLoading(false);
+      }
+    }
+
+    fetchBdrUsers();
+  }, [isDialogOpen]);
+
   async function handleCreateCampaign(e: React.FormEvent) {
     e.preventDefault();
-    if (!newCampaign.name.trim() || !clientId) return;
+    if (!newCampaign.name.trim() || !newCampaign.target || !clientId) return;
+    
+    // BDR is required only if BDRs exist
+    if (bdrUsers.length > 0 && !newCampaign.bdrAssignedId) return;
 
     setIsSubmitting(true);
     try {
@@ -181,7 +232,8 @@ export default function WorkspaceCampaigns() {
           name: newCampaign.name.trim(),
           status: 'onboarding_required',
           phase: 'sprint',
-          target: newCampaign.target || null,
+          target: newCampaign.target,
+          bdr_assigned: newCampaign.bdrAssignedId || null,
           client_id: clientId,
         })
         .select('id')
@@ -190,7 +242,7 @@ export default function WorkspaceCampaigns() {
       if (error) throw error;
 
       toast({ title: 'Campaign created', description: `${newCampaign.name} has been added.` });
-      setNewCampaign({ name: '', target: '' });
+      setNewCampaign({ name: '', target: '', bdrAssignedId: '' });
       setIsDialogOpen(false);
       
       navigate(`/workspace/${clientId}/campaigns/${data.id}`);
@@ -380,7 +432,42 @@ export default function WorkspaceCampaigns() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button type="submit" className="w-full" disabled={isSubmitting || !newCampaign.target}>
+                  <div className="space-y-2">
+                    <Label htmlFor="bdrAssigned">BDR Assigned</Label>
+                    {isBdrLoading ? (
+                      <Skeleton className="h-10 w-full" />
+                    ) : bdrUsers.length === 0 ? (
+                      <Select disabled>
+                        <SelectTrigger id="bdrAssigned">
+                          <SelectValue placeholder="No BDRs available" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background">
+                          <SelectItem value="none" disabled>No BDRs available</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Select
+                        value={newCampaign.bdrAssignedId}
+                        onValueChange={(value) => setNewCampaign({ ...newCampaign, bdrAssignedId: value })}
+                      >
+                        <SelectTrigger id="bdrAssigned">
+                          <SelectValue placeholder="Select BDR" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background">
+                          {bdrUsers.map((bdr) => (
+                            <SelectItem key={bdr.id} value={bdr.id}>
+                              {bdr.display_name || bdr.id}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={isSubmitting || !newCampaign.target || (bdrUsers.length > 0 && !newCampaign.bdrAssignedId)}
+                  >
                     {isSubmitting ? 'Creating...' : 'Create Campaign'}
                   </Button>
                 </form>
