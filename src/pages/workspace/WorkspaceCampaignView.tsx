@@ -43,6 +43,7 @@ interface CampaignDetails {
   campaign_type: string | null;
   target: string | null;
   tier: string | null;
+  bdr_assigned: string | null;
   quarterly_attended_meeting_guarantee: number | null;
   performance_fee_per_meeting: number | null;
   performance_start_date: string | null;
@@ -109,6 +110,7 @@ export default function WorkspaceCampaignView() {
   
   const [clientName, setClientName] = useState('');
   const [campaign, setCampaign] = useState<CampaignDetails | null>(null);
+  const [bdrName, setBdrName] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<CampaignMetrics | null>(null);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [callLogs, setCallLogs] = useState<CallLog[]>([]);
@@ -158,6 +160,21 @@ export default function WorkspaceCampaignView() {
 
         setCampaign(campaignData);
         setOnboardingCompleted(!!campaignData.onboarding_completed_at);
+
+        // Fetch BDR name if assigned
+        if (campaignData.bdr_assigned) {
+          const { data: bdrProfile } = await supabase
+            .from('user_profiles')
+            .select('display_name')
+            .eq('id', campaignData.bdr_assigned)
+            .maybeSingle();
+          
+          if (bdrProfile?.display_name) {
+            setBdrName(bdrProfile.display_name);
+          }
+        } else {
+          setBdrName(null);
+        }
 
         // Fetch metrics
         const quarterStart = startOfQuarter(new Date());
@@ -660,7 +677,7 @@ export default function WorkspaceCampaignView() {
                     <User className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <span className="text-muted-foreground">BDR Assigned</span>
-                      <p className="font-medium">Not assigned</p>
+                      <p className="font-medium">{bdrName || 'Not assigned'}</p>
                     </div>
                   </div>
                 </CardContent>
