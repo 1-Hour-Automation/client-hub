@@ -428,6 +428,24 @@ export default function AdminUsers() {
                   </p>
                 )}
               </div>
+
+              <Button 
+                className="w-full" 
+                disabled={!inviteEmail.trim()}
+                onClick={() => {
+                  toast({ 
+                    title: 'Coming Soon', 
+                    description: 'User invitation functionality will be available soon.' 
+                  });
+                  setIsInviteModalOpen(false);
+                  setInviteEmail('');
+                  setInviteName('');
+                  setInviteRole('');
+                  setInviteWorkspaceIds([]);
+                }}
+              >
+                Send Invite
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
