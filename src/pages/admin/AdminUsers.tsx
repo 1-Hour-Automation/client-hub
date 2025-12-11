@@ -11,6 +11,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Sheet,
@@ -63,6 +65,8 @@ export default function AdminUsers() {
   const [inviteWorkspaceIds, setInviteWorkspaceIds] = useState<string[]>([]);
   const [isInviting, setIsInviting] = useState(false);
   const [workspaceDrawerUser, setWorkspaceDrawerUser] = useState<UserRow | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserRow | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
   async function fetchData() {
@@ -242,6 +246,37 @@ export default function AdminUsers() {
     }
   }
 
+  async function handleDeleteUser() {
+    if (!userToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId: userToDelete.id },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({ 
+        title: 'User deleted', 
+        description: `${userToDelete.display_name || 'User'} has been removed.` 
+      });
+      
+      setUserToDelete(null);
+      fetchData();
+    } catch (error: any) {
+      console.error('Failed to delete user:', error);
+      toast({
+        title: 'Failed to delete user',
+        description: error.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   const getRoleBadges = (roles: AppRole[]) => {
     if (roles.length === 0) {
       return <span className="text-muted-foreground text-sm">No roles</span>;
@@ -295,10 +330,20 @@ export default function AdminUsers() {
     {
       header: 'Actions',
       accessor: (row: UserRow) => (
-        <Button variant="outline" size="sm" onClick={() => openEditDialog(row)}>
-          <Edit className="mr-2 h-4 w-4" />
-          Edit Roles
-        </Button>
+        <div className="flex gap-2 justify-end">
+          <Button variant="outline" size="sm" onClick={() => openEditDialog(row)}>
+            <Edit className="mr-2 h-4 w-4" />
+            Edit Roles
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-destructive hover:text-destructive"
+            onClick={() => setUserToDelete(row)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       ),
       className: 'text-right',
     },
@@ -539,6 +584,31 @@ export default function AdminUsers() {
             )}
           </SheetContent>
         </Sheet>
+
+        {/* Delete User Confirmation Dialog */}
+        <Dialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-destructive">
+                <Trash2 className="h-5 w-5" />
+                Delete User
+              </DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete{' '}
+                <span className="font-medium">{userToDelete?.display_name || 'this user'}</span>?
+                This action cannot be undone and will remove all their data and access.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setUserToDelete(null)} disabled={isDeleting}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteUser} disabled={isDeleting}>
+                {isDeleting ? 'Deleting...' : 'Delete User'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AppLayout>
   );
