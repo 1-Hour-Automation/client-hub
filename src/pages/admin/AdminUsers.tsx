@@ -33,7 +33,7 @@ import { UserCog, Shield, Edit, UserPlus, Building2, Plus, Trash2 } from 'lucide
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 
-type AppRole = 'admin' | 'bdr' | 'client';
+type AppRole = 'admin' | 'bdr' | 'am' | 'client';
 
 interface UserRow {
   id: string;
@@ -142,6 +142,7 @@ export default function AdminUsers() {
   const roleLabels: Record<AppRole, string> = {
     admin: 'Admin',
     bdr: 'BDR',
+    am: 'Account Manager',
     client: 'Client',
   };
 
@@ -394,8 +395,8 @@ export default function AdminUsers() {
 
                 <div className="space-y-3">
                   <Label>Role</Label>
-                  <div className="flex gap-2">
-                    {(['admin', 'bdr', 'client'] as AppRole[]).map((role) => (
+                  <div className="flex flex-wrap gap-2">
+                    {(['admin', 'bdr', 'am', 'client'] as AppRole[]).map((role) => (
                       <Button
                         key={role}
                         type="button"
