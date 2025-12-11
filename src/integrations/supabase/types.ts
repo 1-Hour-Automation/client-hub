@@ -82,6 +82,7 @@ export type Database = {
         Row: {
           bdr_assigned: string | null
           campaign_type: string | null
+          candidate_onboarding_data: Json | null
           client_id: string
           created_at: string
           deleted_at: string | null
@@ -121,6 +122,7 @@ export type Database = {
         Insert: {
           bdr_assigned?: string | null
           campaign_type?: string | null
+          candidate_onboarding_data?: Json | null
           client_id: string
           created_at?: string
           deleted_at?: string | null
@@ -160,6 +162,7 @@ export type Database = {
         Update: {
           bdr_assigned?: string | null
           campaign_type?: string | null
+          candidate_onboarding_data?: Json | null
           client_id?: string
           created_at?: string
           deleted_at?: string | null
