@@ -9,7 +9,7 @@ import { Phone, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-type AuthView = 'login' | 'signup' | 'forgot-password' | 'update-password';
+type AuthView = 'login' | 'signup' | 'forgot-password' | 'update-password' | 'setup-password';
 
 export default function Auth() {
   const [view, setView] = useState<AuthView>('login');
@@ -19,14 +19,15 @@ export default function Auth() {
   const [displayName, setDisplayName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const [isInviteMode, setIsInviteMode] = useState(false);
   
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Listen for password recovery event and check URL hash on load
+  // Listen for password recovery/invite events and check URL hash on load
   useEffect(() => {
-    // Check if we're coming from a recovery link by looking at URL hash
+    // Check if we're coming from a recovery or invite link by looking at URL hash
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const accessToken = hashParams.get('access_token');
     const type = hashParams.get('type');
@@ -34,6 +35,12 @@ export default function Auth() {
     if (accessToken && type === 'recovery') {
       setIsRecoveryMode(true);
       setView('update-password');
+    }
+    
+    // Handle invite/signup/magiclink tokens - these require password setup
+    if (accessToken && (type === 'invite' || type === 'signup' || type === 'magiclink')) {
+      setIsInviteMode(true);
+      setView('setup-password');
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
@@ -46,11 +53,55 @@ export default function Auth() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Redirect if already logged in (but NOT if in recovery mode)
-  if (user && !isRecoveryMode && view !== 'update-password') {
+  // Redirect if already logged in (but NOT if in recovery/invite mode)
+  if (user && !isRecoveryMode && !isInviteMode && view !== 'update-password' && view !== 'setup-password') {
     navigate('/');
     return null;
   }
+
+  const handleSetupPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      toast({
+        title: 'Passwords do not match',
+        description: 'Please ensure both passwords are the same.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: 'Password too short',
+        description: 'Password must be at least 6 characters.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      
+      if (error) {
+        toast({
+          title: 'Setup failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Welcome!',
+          description: 'Your password has been set successfully.',
+        });
+        setIsInviteMode(false);
+        navigate('/');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -211,6 +262,57 @@ export default function Auth() {
               </div>
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? 'Updating...' : 'Update Password'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (view === 'setup-password') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md animate-fade-in">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
+                <Phone className="w-6 h-6 text-primary-foreground" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl">Welcome to CallFlow Portal</CardTitle>
+            <CardDescription>
+              Set up your password to complete your account
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSetupPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="setup-password">Password</Label>
+                <Input
+                  id="setup-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="setup-confirm-password">Confirm Password</Label>
+                <Input
+                  id="setup-confirm-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? 'Setting up...' : 'Set Password & Continue'}
               </Button>
             </form>
           </CardContent>
