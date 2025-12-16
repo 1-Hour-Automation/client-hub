@@ -26,8 +26,8 @@
     --muted: 215 20% 95%;
     --muted-foreground: 215 16% 47%;
 
-    --accent: 215 20% 95%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 217 91% 50%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -50,8 +50,8 @@
     --sidebar-foreground: 222 47% 11%;
     --sidebar-primary: 217 91% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 20% 95%;
-    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-accent: 217 91% 96%;
+    --sidebar-accent-foreground: 217 91% 50%;
     --sidebar-border: 214 32% 91%;
     --sidebar-ring: 217 91% 50%;
   }
@@ -111,51 +111,85 @@
     @apply bg-card/80 backdrop-blur-sm border border-border/50 shadow-sm;
   }
 
-  /* Status Badge Colors - Premium, Minimal */
+  /* Status Badge Colors - Premium Soft Palette */
   .badge-status-pending {
-    @apply bg-amber-50 text-amber-700 border-amber-200/50;
+    @apply bg-amber-50 text-amber-700 border border-amber-200/60 font-medium;
   }
   .badge-status-active {
-    @apply bg-blue-50 text-blue-700 border-blue-200/50;
+    @apply bg-blue-50 text-blue-700 border border-blue-200/60 font-medium;
   }
   .badge-status-paused {
-    @apply bg-slate-100 text-slate-600 border-slate-200/50;
+    @apply bg-slate-50 text-slate-600 border border-slate-200/60 font-medium;
   }
   .badge-status-completed {
-    @apply bg-emerald-50 text-emerald-700 border-emerald-200/50;
+    @apply bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-medium;
   }
   .badge-status-onboarding {
-    @apply bg-amber-50 text-amber-700 border-amber-200/50;
+    @apply bg-amber-50 text-amber-700 border border-amber-200/60 font-medium;
   }
 
-  /* Phase Badge Colors - Quieter, Neutral-toned */
+  /* Phase Badge Colors - Subtle, Professional */
   .badge-phase-sprint {
-    @apply bg-slate-100 text-slate-600 border-slate-200/60;
+    @apply bg-sky-50 text-sky-700 border border-sky-200/60 font-medium;
   }
   .badge-phase-performance {
-    @apply bg-violet-50/70 text-violet-600 border-violet-200/50;
+    @apply bg-violet-50 text-violet-700 border border-violet-200/60 font-medium;
+  }
+
+  /* Target Badge Colors */
+  .badge-target-client {
+    @apply bg-indigo-50 text-indigo-700 border border-indigo-200/60 font-medium;
+  }
+  .badge-target-candidate {
+    @apply bg-teal-50 text-teal-700 border border-teal-200/60 font-medium;
+  }
+
+  /* Health Status Badges */
+  .badge-health-healthy {
+    @apply bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-medium;
+  }
+  .badge-health-moderate {
+    @apply bg-amber-50 text-amber-700 border border-amber-200/60 font-medium;
+  }
+  .badge-health-attention {
+    @apply bg-rose-50 text-rose-700 border border-rose-200/60 font-medium;
   }
 
   /* Dark mode adjustments */
   .dark .badge-status-pending {
-    @apply bg-amber-950/30 text-amber-400 border-amber-800/30;
+    @apply bg-amber-950/40 text-amber-300 border-amber-700/40;
   }
   .dark .badge-status-active {
-    @apply bg-blue-950/30 text-blue-400 border-blue-800/30;
+    @apply bg-blue-950/40 text-blue-300 border-blue-700/40;
   }
   .dark .badge-status-paused {
-    @apply bg-slate-800/50 text-slate-400 border-slate-700/30;
+    @apply bg-slate-800/60 text-slate-300 border-slate-600/40;
   }
   .dark .badge-status-completed {
-    @apply bg-emerald-950/30 text-emerald-400 border-emerald-800/30;
+    @apply bg-emerald-950/40 text-emerald-300 border-emerald-700/40;
   }
   .dark .badge-status-onboarding {
-    @apply bg-amber-950/30 text-amber-400 border-amber-800/30;
+    @apply bg-amber-950/40 text-amber-300 border-amber-700/40;
   }
   .dark .badge-phase-sprint {
-    @apply bg-slate-800/50 text-slate-400 border-slate-700/40;
+    @apply bg-sky-950/40 text-sky-300 border-sky-700/40;
   }
   .dark .badge-phase-performance {
-    @apply bg-violet-950/30 text-violet-400 border-violet-800/30;
+    @apply bg-violet-950/40 text-violet-300 border-violet-700/40;
+  }
+  .dark .badge-target-client {
+    @apply bg-indigo-950/40 text-indigo-300 border-indigo-700/40;
+  }
+  .dark .badge-target-candidate {
+    @apply bg-teal-950/40 text-teal-300 border-teal-700/40;
+  }
+  .dark .badge-health-healthy {
+    @apply bg-emerald-950/40 text-emerald-300 border-emerald-700/40;
+  }
+  .dark .badge-health-moderate {
+    @apply bg-amber-950/40 text-amber-300 border-amber-700/40;
+  }
+  .dark .badge-health-attention {
+    @apply bg-rose-950/40 text-rose-300 border-rose-700/40;
   }
 }
