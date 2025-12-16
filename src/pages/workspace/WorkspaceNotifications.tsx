@@ -166,7 +166,7 @@ export default function WorkspaceNotifications() {
   };
 
   return (
-    <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName}>
+    <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName} clientId={clientId}>
       <div className="space-y-6 animate-fade-in">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Notifications</h1>

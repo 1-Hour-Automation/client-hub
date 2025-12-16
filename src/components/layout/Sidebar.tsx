@@ -24,7 +24,7 @@ interface SidebarProps {
 
 export function Sidebar({ items }: SidebarProps) {
   return (
-    <aside className="w-64 border-r border-border bg-card h-[calc(100vh-4rem)]">
+    <aside className="w-64 border-r border-border bg-card shrink-0 overflow-y-auto">
       <nav className="p-4 space-y-1">
         {items.map((item) => (
           <NavLink

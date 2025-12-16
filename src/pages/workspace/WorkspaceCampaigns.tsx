@@ -311,28 +311,10 @@ export default function WorkspaceCampaigns() {
           campaign_type: originalCampaign.campaign_type,
           target: originalCampaign.target,
           tier: originalCampaign.tier,
-          // Copy onboarding fields
-          onboarding_target_job_titles: originalCampaign.onboarding_target_job_titles,
-          onboarding_industries_to_target: originalCampaign.onboarding_industries_to_target,
-          onboarding_company_size_range: originalCampaign.onboarding_company_size_range,
-          onboarding_required_skills: originalCampaign.onboarding_required_skills,
-          onboarding_locations_to_target: originalCampaign.onboarding_locations_to_target,
-          onboarding_excluded_industries: originalCampaign.onboarding_excluded_industries,
-          onboarding_example_ideal_companies: originalCampaign.onboarding_example_ideal_companies,
-          onboarding_value_proposition: originalCampaign.onboarding_value_proposition,
-          onboarding_key_pain_points: originalCampaign.onboarding_key_pain_points,
-          onboarding_unique_differentiator: originalCampaign.onboarding_unique_differentiator,
-          onboarding_example_messaging: originalCampaign.onboarding_example_messaging,
-          onboarding_common_objections: originalCampaign.onboarding_common_objections,
-          onboarding_recommended_responses: originalCampaign.onboarding_recommended_responses,
-          onboarding_compliance_notes: originalCampaign.onboarding_compliance_notes,
-          onboarding_qualified_prospect_definition: originalCampaign.onboarding_qualified_prospect_definition,
-          onboarding_disqualifying_factors: originalCampaign.onboarding_disqualifying_factors,
-          onboarding_scheduling_link: originalCampaign.onboarding_scheduling_link,
-          onboarding_target_timezone: originalCampaign.onboarding_target_timezone,
-          onboarding_booking_instructions: originalCampaign.onboarding_booking_instructions,
-          onboarding_bdr_notes: originalCampaign.onboarding_bdr_notes,
-          // Copy completed_at if original was completed
+          bdr_assigned: originalCampaign.bdr_assigned,
+          // Copy JSONB targeting data
+          candidate_onboarding_data: originalCampaign.candidate_onboarding_data,
+          client_targeting_brief_data: originalCampaign.client_targeting_brief_data,
           onboarding_completed_at: originalCampaign.onboarding_completed_at,
           // Not copying: internal_notes, performance fields, sprint_campaign_id, deleted_at
         })
@@ -384,7 +366,7 @@ export default function WorkspaceCampaigns() {
   }, [campaigns, activeFilter]);
 
   return (
-    <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName}>
+    <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName} clientId={clientId}>
       <div className="space-y-6 animate-fade-in w-full">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">

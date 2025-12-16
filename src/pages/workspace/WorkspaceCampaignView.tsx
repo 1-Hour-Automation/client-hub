@@ -433,7 +433,7 @@ export default function WorkspaceCampaignView() {
 
   if (isLoading) {
     return (
-      <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName}>
+      <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName} clientId={clientId}>
         <div className="space-y-6 animate-fade-in">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-24 w-full" />
@@ -448,7 +448,7 @@ export default function WorkspaceCampaignView() {
   if (!campaign) return null;
 
   return (
-    <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName}>
+    <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName} clientId={clientId}>
       <div className="space-y-6 animate-fade-in">
         {/* Header */}
         <div className="space-y-4">

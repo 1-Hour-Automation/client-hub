@@ -124,7 +124,7 @@ export default function WorkspaceCallLog() {
   }, [clientId, campaignFilter, dispositionFilter, campaigns]);
 
   return (
-    <AppLayout sidebarItems={workspaceSidebarItems(clientId!)}>
+    <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientId={clientId}>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Call Log</h1>

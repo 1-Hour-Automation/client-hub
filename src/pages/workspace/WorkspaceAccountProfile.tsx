@@ -320,7 +320,7 @@ export default function WorkspaceAccountProfile() {
 
   if (isLoading) {
     return (
-      <AppLayout sidebarItems={workspaceSidebarItems(clientId || '')}>
+      <AppLayout sidebarItems={workspaceSidebarItems(clientId || '')} clientId={clientId || undefined}>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -329,7 +329,7 @@ export default function WorkspaceAccountProfile() {
   }
 
   return (
-    <AppLayout sidebarItems={workspaceSidebarItems(clientId || '')}>
+    <AppLayout sidebarItems={workspaceSidebarItems(clientId || '')} clientId={clientId || undefined}>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
