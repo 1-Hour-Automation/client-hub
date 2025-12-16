@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
+import { CalendarIntegrationCard } from '@/components/integrations/CalendarIntegrationCard';
 
 interface SecondaryContact {
   name: string;
@@ -83,6 +84,8 @@ export default function WorkspaceAccountProfile() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [billingOpen, setBillingOpen] = useState(false);
+  const [calendarConnected, setCalendarConnected] = useState(false);
+  const [calendarProvider, setCalendarProvider] = useState<string | null>(null);
   const [accountData, setAccountData] = useState<AccountData>({
     account_manager: null,
     bdr_assigned: null,
@@ -188,6 +191,10 @@ export default function WorkspaceAccountProfile() {
         if (data.billing_contact_name || data.billing_contact_email || data.billing_contact_phone || data.invoice_method || data.billing_notes) {
           setBillingOpen(true);
         }
+        
+        // Set calendar integration data
+        setCalendarConnected(data.calendar_connected || false);
+        setCalendarProvider(data.calendar_provider || null);
       }
       setIsLoading(false);
     }
@@ -907,6 +914,22 @@ export default function WorkspaceAccountProfile() {
               )}
             </CardContent>
           </Card>
+        </div>
+
+        {/* Integrations Section */}
+        <div className="mt-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Integrations</h2>
+          {clientId && (
+            <CalendarIntegrationCard
+              clientId={clientId}
+              calendarConnected={calendarConnected}
+              calendarProvider={calendarProvider}
+              onUpdate={(connected, provider) => {
+                setCalendarConnected(connected);
+                setCalendarProvider(provider);
+              }}
+            />
+          )}
         </div>
       </div>
     </AppLayout>
