@@ -11,6 +11,7 @@ import {
   Bell,
   UserCircle,
   Clock,
+  Plug,
 } from 'lucide-react';
 
 interface SidebarItem {
@@ -62,6 +63,7 @@ export const workspaceSidebarItems = (clientId: string): SidebarItem[] => [
   { label: 'Call Log', href: `/workspace/${clientId}/call-log`, icon: PhoneCall },
   { label: 'Contacts', href: `/workspace/${clientId}/contacts`, icon: Contact },
   { label: 'Meetings', href: `/workspace/${clientId}/meetings`, icon: Calendar },
+  { label: 'Integrations', href: `/workspace/${clientId}/integrations`, icon: Plug },
   { label: 'Account Profile', href: `/workspace/${clientId}/account-profile`, icon: UserCircle },
   { label: 'Notifications', href: `/workspace/${clientId}/notifications`, icon: Bell },
 ];

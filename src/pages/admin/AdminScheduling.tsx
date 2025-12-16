@@ -50,9 +50,17 @@ interface Client {
   name: string;
 }
 
+interface Campaign {
+  id: string;
+  name: string;
+  client_id: string;
+}
+
 interface Assignment {
   client_id: string;
   client_name: string;
+  campaign_id: string | null;
+  campaign_name: string | null;
   is_active: boolean;
 }
 
@@ -61,6 +69,7 @@ export default function AdminScheduling() {
   const { toast } = useToast();
   const [eventTypes, setEventTypes] = useState<EventType[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
@@ -81,13 +90,15 @@ export default function AdminScheduling() {
   async function fetchData() {
     setIsLoading(true);
     try {
-      const [eventTypesRes, clientsRes] = await Promise.all([
+      const [eventTypesRes, clientsRes, campaignsRes] = await Promise.all([
         supabase.from('event_types').select('*').order('created_at', { ascending: false }),
         supabase.from('clients').select('id, name').order('name'),
+        supabase.from('campaigns').select('id, name, client_id').is('deleted_at', null).order('name'),
       ]);
 
       if (eventTypesRes.error) throw eventTypesRes.error;
       if (clientsRes.error) throw clientsRes.error;
+      if (campaignsRes.error) throw campaignsRes.error;
 
       const typedEventTypes = (eventTypesRes.data || []).map(et => ({
         ...et,
@@ -100,6 +111,7 @@ export default function AdminScheduling() {
 
       setEventTypes(typedEventTypes);
       setClients(clientsRes.data || []);
+      setCampaigns(campaignsRes.data || []);
     } catch (error) {
       console.error('Failed to fetch data:', error);
       toast({
@@ -116,17 +128,28 @@ export default function AdminScheduling() {
     try {
       const { data, error } = await supabase
         .from('event_type_assignments')
-        .select('client_id, is_active')
+        .select('client_id, campaign_id, is_active')
         .eq('event_type_id', eventTypeId);
 
       if (error) throw error;
 
-      const assignedClientIds = new Set((data || []).map(a => a.client_id));
-      const assignmentList = clients.map(client => ({
-        client_id: client.id,
-        client_name: client.name,
-        is_active: assignedClientIds.has(client.id),
-      }));
+      // Create a map of existing assignments keyed by client_id-campaign_id
+      const existingAssignments = new Map(
+        (data || []).map(a => [`${a.client_id}-${a.campaign_id || 'none'}`, a])
+      );
+
+      // Build assignment list - one row per client, showing if assigned
+      const assignmentList = clients.map(client => {
+        const assignmentKey = `${client.id}-none`;
+        const existing = existingAssignments.get(assignmentKey);
+        return {
+          client_id: client.id,
+          client_name: client.name,
+          campaign_id: null,
+          campaign_name: null,
+          is_active: !!existing,
+        };
+      });
 
       setAssignments(assignmentList);
     } catch (error) {
@@ -231,7 +254,7 @@ export default function AdminScheduling() {
     }
   }
 
-  async function handleToggleAssignment(clientId: string, isActive: boolean) {
+  async function handleToggleAssignment(clientId: string, isActive: boolean, campaignId: string | null = null) {
     if (!selectedEventType) return;
 
     try {
@@ -239,21 +262,30 @@ export default function AdminScheduling() {
         const { error } = await supabase.from('event_type_assignments').insert({
           event_type_id: selectedEventType.id,
           client_id: clientId,
+          campaign_id: campaignId,
           is_active: true,
         });
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        let query = supabase
           .from('event_type_assignments')
           .delete()
           .eq('event_type_id', selectedEventType.id)
           .eq('client_id', clientId);
+        
+        if (campaignId) {
+          query = query.eq('campaign_id', campaignId);
+        } else {
+          query = query.is('campaign_id', null);
+        }
+        
+        const { error } = await query;
         if (error) throw error;
       }
 
       setAssignments(prev =>
         prev.map(a =>
-          a.client_id === clientId ? { ...a, is_active: isActive } : a
+          a.client_id === clientId && a.campaign_id === campaignId ? { ...a, is_active: isActive } : a
         )
       );
     } catch (error) {
@@ -557,14 +589,14 @@ export default function AdminScheduling() {
                   className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/50"
                 >
                   <Checkbox
-                    id={assignment.client_id}
+                    id={`${assignment.client_id}-${assignment.campaign_id || 'none'}`}
                     checked={assignment.is_active}
                     onCheckedChange={(checked) =>
-                      handleToggleAssignment(assignment.client_id, checked === true)
+                      handleToggleAssignment(assignment.client_id, checked === true, assignment.campaign_id)
                     }
                   />
                   <Label
-                    htmlFor={assignment.client_id}
+                    htmlFor={`${assignment.client_id}-${assignment.campaign_id || 'none'}`}
                     className="flex-1 cursor-pointer font-normal"
                   >
                     {assignment.client_name}

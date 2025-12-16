@@ -391,6 +391,7 @@ export type Database = {
       }
       event_type_assignments: {
         Row: {
+          campaign_id: string | null
           client_id: string
           created_at: string
           event_type_id: string
@@ -398,6 +399,7 @@ export type Database = {
           is_active: boolean | null
         }
         Insert: {
+          campaign_id?: string | null
           client_id: string
           created_at?: string
           event_type_id: string
@@ -405,6 +407,7 @@ export type Database = {
           is_active?: boolean | null
         }
         Update: {
+          campaign_id?: string | null
           client_id?: string
           created_at?: string
           event_type_id?: string
@@ -412,6 +415,13 @@ export type Database = {
           is_active?: boolean | null
         }
         Relationships: [
+          {
+            foreignKeyName: "event_type_assignments_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "event_type_assignments_client_id_fkey"
             columns: ["client_id"]
