@@ -34,6 +34,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Json } from '@/integrations/supabase/types';
 
 const formSchema = z.object({
   tier: z.string().min(1, 'Tier is required'),
@@ -50,26 +51,8 @@ interface SprintCampaign {
   name: string;
   client_id: string;
   target: string | null;
-  onboarding_target_job_titles: string | null;
-  onboarding_industries_to_target: string | null;
-  onboarding_company_size_range: string | null;
-  onboarding_required_skills: string | null;
-  onboarding_locations_to_target: string | null;
-  onboarding_excluded_industries: string | null;
-  onboarding_example_ideal_companies: string | null;
-  onboarding_value_proposition: string | null;
-  onboarding_key_pain_points: string | null;
-  onboarding_unique_differentiator: string | null;
-  onboarding_example_messaging: string | null;
-  onboarding_common_objections: string | null;
-  onboarding_recommended_responses: string | null;
-  onboarding_compliance_notes: string | null;
-  onboarding_qualified_prospect_definition: string | null;
-  onboarding_disqualifying_factors: string | null;
-  onboarding_scheduling_link: string | null;
-  onboarding_target_timezone: string | null;
-  onboarding_booking_instructions: string | null;
-  onboarding_bdr_notes: string | null;
+  candidate_onboarding_data: Json | null;
+  client_targeting_brief_data: Json | null;
 }
 
 interface CreatePerformancePlanModalProps {
@@ -116,27 +99,9 @@ export function CreatePerformancePlanModal({
           performance_start_date: format(values.performance_start_date, 'yyyy-MM-dd'),
           internal_notes: values.internal_notes || null,
           sprint_campaign_id: sprintCampaign.id,
-          // Copy onboarding data (Script & Playbook, Data & ICP)
-          onboarding_target_job_titles: sprintCampaign.onboarding_target_job_titles,
-          onboarding_industries_to_target: sprintCampaign.onboarding_industries_to_target,
-          onboarding_company_size_range: sprintCampaign.onboarding_company_size_range,
-          onboarding_required_skills: sprintCampaign.onboarding_required_skills,
-          onboarding_locations_to_target: sprintCampaign.onboarding_locations_to_target,
-          onboarding_excluded_industries: sprintCampaign.onboarding_excluded_industries,
-          onboarding_example_ideal_companies: sprintCampaign.onboarding_example_ideal_companies,
-          onboarding_value_proposition: sprintCampaign.onboarding_value_proposition,
-          onboarding_key_pain_points: sprintCampaign.onboarding_key_pain_points,
-          onboarding_unique_differentiator: sprintCampaign.onboarding_unique_differentiator,
-          onboarding_example_messaging: sprintCampaign.onboarding_example_messaging,
-          onboarding_common_objections: sprintCampaign.onboarding_common_objections,
-          onboarding_recommended_responses: sprintCampaign.onboarding_recommended_responses,
-          onboarding_compliance_notes: sprintCampaign.onboarding_compliance_notes,
-          onboarding_qualified_prospect_definition: sprintCampaign.onboarding_qualified_prospect_definition,
-          onboarding_disqualifying_factors: sprintCampaign.onboarding_disqualifying_factors,
-          onboarding_scheduling_link: sprintCampaign.onboarding_scheduling_link,
-          onboarding_target_timezone: sprintCampaign.onboarding_target_timezone,
-          onboarding_booking_instructions: sprintCampaign.onboarding_booking_instructions,
-          onboarding_bdr_notes: sprintCampaign.onboarding_bdr_notes,
+          // Copy targeting brief data
+          candidate_onboarding_data: sprintCampaign.candidate_onboarding_data,
+          client_targeting_brief_data: sprintCampaign.client_targeting_brief_data,
           onboarding_completed_at: new Date().toISOString(),
         })
         .select('id')
