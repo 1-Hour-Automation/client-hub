@@ -181,6 +181,7 @@ export type Database = {
           id: string
           invoice_method: string | null
           invoicing_frequency: string | null
+          last_synced_at: string | null
           last_updated_at: string | null
           last_updated_by: string | null
           legal_business_name: string | null
@@ -199,9 +200,11 @@ export type Database = {
           registration_number: string | null
           secondary_contacts: Json | null
           sending_email_address: string | null
+          sync_enabled: boolean | null
           team_members_with_access: Json | null
           timezone: string | null
           vat_number: string | null
+          watched_calendars: Json | null
           website: string | null
         }
         Insert: {
@@ -225,6 +228,7 @@ export type Database = {
           id?: string
           invoice_method?: string | null
           invoicing_frequency?: string | null
+          last_synced_at?: string | null
           last_updated_at?: string | null
           last_updated_by?: string | null
           legal_business_name?: string | null
@@ -243,9 +247,11 @@ export type Database = {
           registration_number?: string | null
           secondary_contacts?: Json | null
           sending_email_address?: string | null
+          sync_enabled?: boolean | null
           team_members_with_access?: Json | null
           timezone?: string | null
           vat_number?: string | null
+          watched_calendars?: Json | null
           website?: string | null
         }
         Update: {
@@ -269,6 +275,7 @@ export type Database = {
           id?: string
           invoice_method?: string | null
           invoicing_frequency?: string | null
+          last_synced_at?: string | null
           last_updated_at?: string | null
           last_updated_by?: string | null
           legal_business_name?: string | null
@@ -287,9 +294,11 @@ export type Database = {
           registration_number?: string | null
           secondary_contacts?: Json | null
           sending_email_address?: string | null
+          sync_enabled?: boolean | null
           team_members_with_access?: Json | null
           timezone?: string | null
           vat_number?: string | null
+          watched_calendars?: Json | null
           website?: string | null
         }
         Relationships: []
@@ -342,6 +351,44 @@ export type Database = {
           },
         ]
       }
+      email_reminders: {
+        Row: {
+          created_at: string
+          id: string
+          meeting_id: string
+          reminder_type: string
+          scheduled_for: string
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meeting_id: string
+          reminder_type: string
+          scheduled_for: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          reminder_type?: string
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_reminders_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_type_assignments: {
         Row: {
           client_id: string
@@ -383,6 +430,8 @@ export type Database = {
       }
       event_types: {
         Row: {
+          booking_questions: Json | null
+          buffer_time_mins: number | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -390,9 +439,12 @@ export type Database = {
           id: string
           slug: string
           title: string
+          title_template: string | null
           updated_at: string
         }
         Insert: {
+          booking_questions?: Json | null
+          buffer_time_mins?: number | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -400,9 +452,12 @@ export type Database = {
           id?: string
           slug: string
           title: string
+          title_template?: string | null
           updated_at?: string
         }
         Update: {
+          booking_questions?: Json | null
+          buffer_time_mins?: number | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -410,6 +465,7 @@ export type Database = {
           id?: string
           slug?: string
           title?: string
+          title_template?: string | null
           updated_at?: string
         }
         Relationships: []
