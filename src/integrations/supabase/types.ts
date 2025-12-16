@@ -90,27 +90,7 @@ export type Database = {
           id: string
           internal_notes: string | null
           name: string
-          onboarding_bdr_notes: string | null
-          onboarding_booking_instructions: string | null
-          onboarding_common_objections: string | null
-          onboarding_company_size_range: string | null
           onboarding_completed_at: string | null
-          onboarding_compliance_notes: string | null
-          onboarding_disqualifying_factors: string | null
-          onboarding_example_ideal_companies: string | null
-          onboarding_example_messaging: string | null
-          onboarding_excluded_industries: string | null
-          onboarding_industries_to_target: string | null
-          onboarding_key_pain_points: string | null
-          onboarding_locations_to_target: string | null
-          onboarding_qualified_prospect_definition: string | null
-          onboarding_recommended_responses: string | null
-          onboarding_required_skills: string | null
-          onboarding_scheduling_link: string | null
-          onboarding_target_job_titles: string | null
-          onboarding_target_timezone: string | null
-          onboarding_unique_differentiator: string | null
-          onboarding_value_proposition: string | null
           performance_fee_per_meeting: number | null
           performance_start_date: string | null
           phase: string
@@ -131,27 +111,7 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           name: string
-          onboarding_bdr_notes?: string | null
-          onboarding_booking_instructions?: string | null
-          onboarding_common_objections?: string | null
-          onboarding_company_size_range?: string | null
           onboarding_completed_at?: string | null
-          onboarding_compliance_notes?: string | null
-          onboarding_disqualifying_factors?: string | null
-          onboarding_example_ideal_companies?: string | null
-          onboarding_example_messaging?: string | null
-          onboarding_excluded_industries?: string | null
-          onboarding_industries_to_target?: string | null
-          onboarding_key_pain_points?: string | null
-          onboarding_locations_to_target?: string | null
-          onboarding_qualified_prospect_definition?: string | null
-          onboarding_recommended_responses?: string | null
-          onboarding_required_skills?: string | null
-          onboarding_scheduling_link?: string | null
-          onboarding_target_job_titles?: string | null
-          onboarding_target_timezone?: string | null
-          onboarding_unique_differentiator?: string | null
-          onboarding_value_proposition?: string | null
           performance_fee_per_meeting?: number | null
           performance_start_date?: string | null
           phase?: string
@@ -172,27 +132,7 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           name?: string
-          onboarding_bdr_notes?: string | null
-          onboarding_booking_instructions?: string | null
-          onboarding_common_objections?: string | null
-          onboarding_company_size_range?: string | null
           onboarding_completed_at?: string | null
-          onboarding_compliance_notes?: string | null
-          onboarding_disqualifying_factors?: string | null
-          onboarding_example_ideal_companies?: string | null
-          onboarding_example_messaging?: string | null
-          onboarding_excluded_industries?: string | null
-          onboarding_industries_to_target?: string | null
-          onboarding_key_pain_points?: string | null
-          onboarding_locations_to_target?: string | null
-          onboarding_qualified_prospect_definition?: string | null
-          onboarding_recommended_responses?: string | null
-          onboarding_required_skills?: string | null
-          onboarding_scheduling_link?: string | null
-          onboarding_target_job_titles?: string | null
-          onboarding_target_timezone?: string | null
-          onboarding_unique_differentiator?: string | null
-          onboarding_value_proposition?: string | null
           performance_fee_per_meeting?: number | null
           performance_start_date?: string | null
           phase?: string
