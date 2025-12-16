@@ -155,6 +155,12 @@ export default function WorkspaceCampaignView() {
     setCampaign(prev => prev ? { ...prev, client_targeting_brief_data: data } : null);
   }, []);
 
+  const handleStatusUpdated = useCallback(() => {
+    // Reload campaign to reflect status change
+    setCampaign(prev => prev ? { ...prev, status: 'pending', phase: 'sprint' } : null);
+    setOnboardingCompleted(true);
+  }, []);
+
   useEffect(() => {
     async function fetchData() {
       if (!clientId || !campaignId) return;
@@ -562,6 +568,41 @@ export default function WorkspaceCampaignView() {
           </Card>
         )}
 
+        {/* Start Onboarding Banner for not_started phase */}
+        {campaign.phase === 'not_started' && !onboardingCompleted && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="flex items-center justify-between p-6">
+              <div className="flex items-center gap-4">
+                <div className="rounded-full bg-primary/10 p-3">
+                  <Rocket className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Get Started with Onboarding</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Complete the targeting brief to activate this campaign.
+                  </p>
+                </div>
+              </div>
+              <Tabs defaultValue="overview" className="hidden">
+                <TabsList>
+                  <TabsTrigger value="onboarding" id="onboarding-tab-trigger" />
+                </TabsList>
+              </Tabs>
+              <Button 
+                size="lg" 
+                className="gap-2"
+                onClick={() => {
+                  const tabTrigger = document.querySelector('[value="onboarding"]') as HTMLButtonElement;
+                  if (tabTrigger) tabTrigger.click();
+                }}
+              >
+                <ClipboardList className="h-4 w-4" />
+                Start Onboarding
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList>
@@ -730,12 +771,14 @@ export default function WorkspaceCampaignView() {
                 ) : (
                   <CandidateTargetingBriefForm
                     campaignId={campaignId!}
+                    clientId={clientId!}
                     campaignName={campaign.name}
                     workspaceName={clientName}
                     initialData={campaign.candidate_onboarding_data as unknown as CandidateTargetingBriefData}
                     isInternalUser={isInternalUser}
                     onCompleted={handleCandidateOnboardingCompleted}
                     onDataUpdated={(data) => handleCandidateDataUpdated(data as unknown as CandidateOnboardingData)}
+                    onStatusUpdated={handleStatusUpdated}
                   />
                 )}
               </>
@@ -755,12 +798,14 @@ export default function WorkspaceCampaignView() {
                 ) : (
                   <ClientTargetingBriefForm
                     campaignId={campaignId!}
+                    clientId={clientId!}
                     campaignName={campaign.name}
                     workspaceName={clientName}
                     initialData={campaign.client_targeting_brief_data}
                     isInternalUser={isInternalUser}
                     onCompleted={handleClientTargetingCompleted}
                     onDataUpdated={handleClientTargetingDataUpdated}
+                    onStatusUpdated={handleStatusUpdated}
                   />
                 )}
               </>
