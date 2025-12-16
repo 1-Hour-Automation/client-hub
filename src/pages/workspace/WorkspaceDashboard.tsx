@@ -217,7 +217,7 @@ export default function WorkspaceDashboard() {
   }, [clientId]);
 
   return (
-    <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName}>
+    <AppLayout sidebarItems={workspaceSidebarItems(clientId!)} clientName={clientName} clientId={clientId}>
       <div className="space-y-5 animate-fade-in">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">{clientName} Dashboard</h1>
