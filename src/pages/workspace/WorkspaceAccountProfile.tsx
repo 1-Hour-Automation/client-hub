@@ -86,6 +86,9 @@ export default function WorkspaceAccountProfile() {
   const [billingOpen, setBillingOpen] = useState(false);
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [calendarProvider, setCalendarProvider] = useState<string | null>(null);
+  const [syncEnabled, setSyncEnabled] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [watchedCalendars, setWatchedCalendars] = useState<string[]>([]);
   const [accountData, setAccountData] = useState<AccountData>({
     account_manager: null,
     bdr_assigned: null,
@@ -195,6 +198,9 @@ export default function WorkspaceAccountProfile() {
         // Set calendar integration data
         setCalendarConnected(data.calendar_connected || false);
         setCalendarProvider(data.calendar_provider || null);
+        setSyncEnabled(data.sync_enabled || false);
+        setLastSyncedAt(data.last_synced_at || null);
+        setWatchedCalendars(Array.isArray(data.watched_calendars) ? (data.watched_calendars as string[]) : []);
       }
       setIsLoading(false);
     }
@@ -924,9 +930,15 @@ export default function WorkspaceAccountProfile() {
               clientId={clientId}
               calendarConnected={calendarConnected}
               calendarProvider={calendarProvider}
-              onUpdate={(connected, provider) => {
-                setCalendarConnected(connected);
-                setCalendarProvider(provider);
+              syncEnabled={syncEnabled}
+              lastSyncedAt={lastSyncedAt}
+              watchedCalendars={watchedCalendars}
+              onUpdate={(data) => {
+                setCalendarConnected(data.connected);
+                setCalendarProvider(data.provider);
+                setSyncEnabled(data.syncEnabled);
+                setLastSyncedAt(data.lastSyncedAt);
+                setWatchedCalendars(data.watchedCalendars);
               }}
             />
           )}

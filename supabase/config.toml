@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.delete-user]
 verify_jwt = false
+
+[functions.send-meeting-reminder]
+verify_jwt = false

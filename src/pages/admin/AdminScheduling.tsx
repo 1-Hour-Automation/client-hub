@@ -25,7 +25,13 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Clock, Trash2, Settings2, Loader2, Building2 } from 'lucide-react';
+import { Plus, Clock, Trash2, Loader2, Building2, HelpCircle, Timer } from 'lucide-react';
+
+interface BookingQuestion {
+  id: string;
+  question: string;
+  required: boolean;
+}
 
 interface EventType {
   id: string;
@@ -33,6 +39,9 @@ interface EventType {
   description: string | null;
   duration: number;
   slug: string;
+  buffer_time_mins: number;
+  booking_questions: BookingQuestion[];
+  title_template: string;
   created_at: string;
 }
 
@@ -63,7 +72,11 @@ export default function AdminScheduling() {
     description: '',
     duration: '30',
     slug: '',
+    buffer_time_mins: '15',
+    title_template: 'Intro with {{contact_name}}',
+    booking_questions: [] as BookingQuestion[],
   });
+  const [newQuestion, setNewQuestion] = useState('');
 
   async function fetchData() {
     setIsLoading(true);
@@ -76,7 +89,16 @@ export default function AdminScheduling() {
       if (eventTypesRes.error) throw eventTypesRes.error;
       if (clientsRes.error) throw clientsRes.error;
 
-      setEventTypes(eventTypesRes.data || []);
+      const typedEventTypes = (eventTypesRes.data || []).map(et => ({
+        ...et,
+        booking_questions: Array.isArray(et.booking_questions) 
+          ? (et.booking_questions as unknown as BookingQuestion[]) 
+          : [],
+        buffer_time_mins: et.buffer_time_mins || 15,
+        title_template: et.title_template || 'Intro with {{contact_name}}',
+      }));
+
+      setEventTypes(typedEventTypes);
       setClients(clientsRes.data || []);
     } catch (error) {
       console.error('Failed to fetch data:', error);
@@ -125,6 +147,27 @@ export default function AdminScheduling() {
       .trim();
   }
 
+  function addBookingQuestion() {
+    if (!newQuestion.trim()) return;
+    const question: BookingQuestion = {
+      id: crypto.randomUUID(),
+      question: newQuestion.trim(),
+      required: true,
+    };
+    setNewEventType(prev => ({
+      ...prev,
+      booking_questions: [...prev.booking_questions, question],
+    }));
+    setNewQuestion('');
+  }
+
+  function removeBookingQuestion(id: string) {
+    setNewEventType(prev => ({
+      ...prev,
+      booking_questions: prev.booking_questions.filter(q => q.id !== id),
+    }));
+  }
+
   async function handleCreateEventType(e: React.FormEvent) {
     e.preventDefault();
     if (!newEventType.title.trim()) return;
@@ -138,13 +181,24 @@ export default function AdminScheduling() {
         description: newEventType.description.trim() || null,
         duration: parseInt(newEventType.duration),
         slug,
+        buffer_time_mins: parseInt(newEventType.buffer_time_mins),
+        title_template: newEventType.title_template,
+        booking_questions: newEventType.booking_questions as unknown as any,
         created_by: user?.id,
       });
 
       if (error) throw error;
 
       toast({ title: 'Event type created', description: `${newEventType.title} has been created.` });
-      setNewEventType({ title: '', description: '', duration: '30', slug: '' });
+      setNewEventType({
+        title: '',
+        description: '',
+        duration: '30',
+        slug: '',
+        buffer_time_mins: '15',
+        title_template: 'Intro with {{contact_name}}',
+        booking_questions: [],
+      });
       setIsDialogOpen(false);
       fetchData();
     } catch (error: any) {
@@ -182,7 +236,6 @@ export default function AdminScheduling() {
 
     try {
       if (isActive) {
-        // Add assignment
         const { error } = await supabase.from('event_type_assignments').insert({
           event_type_id: selectedEventType.id,
           client_id: clientId,
@@ -190,7 +243,6 @@ export default function AdminScheduling() {
         });
         if (error) throw error;
       } else {
-        // Remove assignment
         const { error } = await supabase
           .from('event_type_assignments')
           .delete()
@@ -227,6 +279,14 @@ export default function AdminScheduling() {
     { value: '60', label: '60 minutes' },
   ];
 
+  const bufferOptions = [
+    { value: '0', label: 'No buffer' },
+    { value: '5', label: '5 minutes' },
+    { value: '10', label: '10 minutes' },
+    { value: '15', label: '15 minutes' },
+    { value: '30', label: '30 minutes' },
+  ];
+
   return (
     <AppLayout sidebarItems={adminSidebarItems}>
       <div className="space-y-6 animate-fade-in">
@@ -244,7 +304,7 @@ export default function AdminScheduling() {
                 Create Event Type
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create Event Type</DialogTitle>
               </DialogHeader>
@@ -265,6 +325,20 @@ export default function AdminScheduling() {
                     required
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="title_template">Dynamic Meeting Title</Label>
+                  <Input
+                    id="title_template"
+                    placeholder="Intro with {{contact_name}}"
+                    value={newEventType.title_template}
+                    onChange={(e) => setNewEventType({ ...newEventType, title_template: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Use {"{{contact_name}}"} to insert the contact's name automatically.
+                  </p>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="slug">URL Slug</Label>
                   <Input
@@ -277,24 +351,47 @@ export default function AdminScheduling() {
                     The URL will be: /book/[client-id]/{newEventType.slug || 'slug'}
                   </p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="duration">Duration *</Label>
-                  <Select
-                    value={newEventType.duration}
-                    onValueChange={(value) => setNewEventType({ ...newEventType, duration: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {durationOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="duration">Duration *</Label>
+                    <Select
+                      value={newEventType.duration}
+                      onValueChange={(value) => setNewEventType({ ...newEventType, duration: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {durationOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="buffer">Buffer Time</Label>
+                    <Select
+                      value={newEventType.buffer_time_mins}
+                      onValueChange={(value) => setNewEventType({ ...newEventType, buffer_time_mins: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bufferOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
                   <Textarea
@@ -302,9 +399,58 @@ export default function AdminScheduling() {
                     placeholder="A brief introductory call to discuss your needs..."
                     value={newEventType.description}
                     onChange={(e) => setNewEventType({ ...newEventType, description: e.target.value })}
-                    rows={3}
+                    rows={2}
                   />
                 </div>
+
+                {/* Booking Questions */}
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-2">
+                    <HelpCircle className="h-4 w-4" />
+                    Booking Questions
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="What is your current headcount?"
+                      value={newQuestion}
+                      onChange={(e) => setNewQuestion(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addBookingQuestion();
+                        }
+                      }}
+                    />
+                    <Button type="button" variant="outline" onClick={addBookingQuestion}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {newEventType.booking_questions.length > 0 && (
+                    <div className="space-y-2">
+                      {newEventType.booking_questions.map((q, index) => (
+                        <div
+                          key={q.id}
+                          className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg text-sm"
+                        >
+                          <span className="text-muted-foreground">{index + 1}.</span>
+                          <span className="flex-1">{q.question}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeBookingQuestion(q.id)}
+                          >
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Questions that prospects must answer when booking.
+                  </p>
+                </div>
+
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
                   {isSubmitting ? 'Creating...' : 'Create Event Type'}
                 </Button>
@@ -343,35 +489,51 @@ export default function AdminScheduling() {
                         {eventType.description || 'No description'}
                       </CardDescription>
                     </div>
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {eventType.duration}m
-                    </Badge>
+                    <div className="flex flex-col gap-1 items-end">
+                      <Badge variant="secondary" className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {eventType.duration}m
+                      </Badge>
+                      {eventType.buffer_time_mins > 0 && (
+                        <Badge variant="outline" className="flex items-center gap-1 text-xs">
+                          <Timer className="h-3 w-3" />
+                          {eventType.buffer_time_mins}m buffer
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-sm text-muted-foreground mb-4">
-                    <span className="font-mono bg-muted px-2 py-1 rounded text-xs">
-                      /book/[client]/{eventType.slug}
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => openAssignmentDialog(eventType)}
-                    >
-                      <Building2 className="h-4 w-4 mr-1" />
-                      Assign Clients
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteEventType(eventType.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                  <div className="space-y-3">
+                    <div className="text-sm text-muted-foreground">
+                      <span className="font-mono bg-muted px-2 py-1 rounded text-xs">
+                        /book/[client]/{eventType.slug}
+                      </span>
+                    </div>
+                    {eventType.booking_questions.length > 0 && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <HelpCircle className="h-3 w-3" />
+                        {eventType.booking_questions.length} booking question{eventType.booking_questions.length !== 1 ? 's' : ''}
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => openAssignmentDialog(eventType)}
+                      >
+                        <Building2 className="h-4 w-4 mr-1" />
+                        Assign Clients
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteEventType(eventType.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
