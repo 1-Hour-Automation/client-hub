@@ -158,9 +158,9 @@ const SUCCESS_DEFINITIONS = [
 ] as const;
 
 const clientTargetingBriefSchema = z.object({
-  // Section 1: Campaign Objective
-  primary_objective: z.string().min(1, 'Please select a primary objective'),
-  hiring_focus: z.string().min(1, 'Please select a hiring focus'),
+  // Section 1: Campaign Objective (required for targeting activation, but saving allowed)
+  primary_objective: z.string().optional(),
+  hiring_focus: z.string().optional(),
   
   // Section 2: Target Hiring Organisations
   org_types: z.array(z.string()).optional(),
@@ -262,6 +262,7 @@ export function ClientTargetingBriefForm({
 }: ClientTargetingBriefFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasAttemptedSave, setHasAttemptedSave] = useState(false);
 
   const form = useForm<ClientTargetingBriefFormValues>({
     resolver: zodResolver(clientTargetingBriefSchema),
@@ -295,6 +296,7 @@ export function ClientTargetingBriefForm({
   });
 
   async function onSubmit(values: ClientTargetingBriefFormValues) {
+    setHasAttemptedSave(true);
     setIsSubmitting(true);
     try {
       const dataToSave: ClientTargetingBriefData = {
@@ -309,9 +311,12 @@ export function ClientTargetingBriefForm({
 
       if (error) throw error;
 
+      const missingRequired = !values.primary_objective || !values.hiring_focus;
       toast({
         title: 'Targeting brief saved',
-        description: 'Your client targeting brief has been saved successfully.',
+        description: missingRequired 
+          ? 'Saved successfully. Complete the required fields in Section 1 to activate targeting.'
+          : 'Your client targeting brief has been saved successfully.',
       });
 
       onDataUpdated(dataToSave);
@@ -363,51 +368,70 @@ export function ClientTargetingBriefForm({
                 <Target className="h-4 w-4 text-primary" />
                 Section 1: Campaign Objective
               </h3>
+              <p className="text-xs text-muted-foreground">
+                These two fields are required to activate targeting logic. All other fields are optional and can be completed progressively.
+              </p>
               
               <FormField
                 control={form.control}
                 name="primary_objective"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Primary Objective</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select primary objective" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {PRIMARY_OBJECTIVES.map((obj) => (
-                          <SelectItem key={obj} value={obj}>{obj}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const isMissing = hasAttemptedSave && !field.value;
+                  return (
+                    <FormItem>
+                      <FormLabel>
+                        Primary Objective <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className={isMissing ? 'border-destructive' : ''}>
+                            <SelectValue placeholder="Select primary objective" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {PRIMARY_OBJECTIVES.map((obj) => (
+                            <SelectItem key={obj} value={obj}>{obj}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {isMissing && (
+                        <p className="text-xs text-destructive">Required to activate targeting</p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
 
               <FormField
                 control={form.control}
                 name="hiring_focus"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Hiring Focus</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select hiring focus" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {HIRING_FOCUS.map((focus) => (
-                          <SelectItem key={focus} value={focus}>{focus}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const isMissing = hasAttemptedSave && !field.value;
+                  return (
+                    <FormItem>
+                      <FormLabel>
+                        Hiring Focus <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className={isMissing ? 'border-destructive' : ''}>
+                            <SelectValue placeholder="Select hiring focus" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {HIRING_FOCUS.map((focus) => (
+                            <SelectItem key={focus} value={focus}>{focus}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {isMissing && (
+                        <p className="text-xs text-destructive">Required to activate targeting</p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
             </div>
 
