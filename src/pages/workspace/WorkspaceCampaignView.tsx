@@ -31,6 +31,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CampaignOnboardingForm } from '@/components/campaigns/CampaignOnboardingForm';
 import { CandidateOnboardingForm, CandidateOnboardingData } from '@/components/campaigns/CandidateOnboardingForm';
 import { CandidateOnboardingSummary } from '@/components/campaigns/CandidateOnboardingSummary';
+import { ClientTargetingBriefForm, ClientTargetingBriefData } from '@/components/campaigns/ClientTargetingBriefForm';
+import { ClientTargetingBriefSummary } from '@/components/campaigns/ClientTargetingBriefSummary';
 import { CreatePerformancePlanModal } from '@/components/campaigns/CreatePerformancePlanModal';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format, startOfQuarter, addDays, startOfMonth, endOfMonth } from 'date-fns';
@@ -75,6 +77,7 @@ interface CampaignDetails {
   onboarding_booking_instructions: string | null;
   onboarding_bdr_notes: string | null;
   candidate_onboarding_data: CandidateOnboardingData | null;
+  client_targeting_brief_data: ClientTargetingBriefData | null;
 }
 
 interface CampaignMetrics {
@@ -122,6 +125,7 @@ export default function WorkspaceCampaignView() {
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [isPerformanceModalOpen, setIsPerformanceModalOpen] = useState(false);
   const [candidateOnboardingEditMode, setCandidateOnboardingEditMode] = useState(false);
+  const [clientTargetingEditMode, setClientTargetingEditMode] = useState(false);
   
   // Delete/Duplicate state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -139,6 +143,14 @@ export default function WorkspaceCampaignView() {
 
   const handleCandidateDataUpdated = useCallback((data: CandidateOnboardingData) => {
     setCampaign(prev => prev ? { ...prev, candidate_onboarding_data: data } : null);
+  }, []);
+
+  const handleClientTargetingCompleted = useCallback(() => {
+    setClientTargetingEditMode(false);
+  }, []);
+
+  const handleClientTargetingDataUpdated = useCallback((data: ClientTargetingBriefData) => {
+    setCampaign(prev => prev ? { ...prev, client_targeting_brief_data: data } : null);
   }, []);
 
   useEffect(() => {
@@ -173,6 +185,7 @@ export default function WorkspaceCampaignView() {
         setCampaign({
           ...campaignData,
           candidate_onboarding_data: campaignData.candidate_onboarding_data as CandidateOnboardingData | null,
+          client_targeting_brief_data: campaignData.client_targeting_brief_data as ClientTargetingBriefData | null,
         });
         setOnboardingCompleted(!!campaignData.onboarding_completed_at);
 
@@ -698,6 +711,31 @@ export default function WorkspaceCampaignView() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Client Side Targeting Brief - Only for Client-focused campaigns */}
+            {campaign.target === 'Client' && (
+              <>
+                {campaign.client_targeting_brief_data?.completed_at && !clientTargetingEditMode ? (
+                  <ClientTargetingBriefSummary
+                    data={campaign.client_targeting_brief_data}
+                    campaignName={campaign.name}
+                    workspaceName={clientName}
+                    isInternalUser={isInternalUser}
+                    onEditClick={() => setClientTargetingEditMode(true)}
+                  />
+                ) : (
+                  <ClientTargetingBriefForm
+                    campaignId={campaignId!}
+                    campaignName={campaign.name}
+                    workspaceName={clientName}
+                    initialData={campaign.client_targeting_brief_data}
+                    isInternalUser={isInternalUser}
+                    onCompleted={handleClientTargetingCompleted}
+                    onDataUpdated={handleClientTargetingDataUpdated}
+                  />
+                )}
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="onboarding" className="space-y-6">

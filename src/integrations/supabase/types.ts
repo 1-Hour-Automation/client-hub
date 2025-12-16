@@ -84,6 +84,7 @@ export type Database = {
           campaign_type: string | null
           candidate_onboarding_data: Json | null
           client_id: string
+          client_targeting_brief_data: Json | null
           created_at: string
           deleted_at: string | null
           id: string
@@ -124,6 +125,7 @@ export type Database = {
           campaign_type?: string | null
           candidate_onboarding_data?: Json | null
           client_id: string
+          client_targeting_brief_data?: Json | null
           created_at?: string
           deleted_at?: string | null
           id?: string
@@ -164,6 +166,7 @@ export type Database = {
           campaign_type?: string | null
           candidate_onboarding_data?: Json | null
           client_id?: string
+          client_targeting_brief_data?: Json | null
           created_at?: string
           deleted_at?: string | null
           id?: string
