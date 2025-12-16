@@ -711,31 +711,6 @@ export default function WorkspaceCampaignView() {
                 </CardContent>
               </Card>
             </div>
-
-            {/* Client Side Targeting Brief - Only for Client-focused campaigns */}
-            {campaign.target === 'Client' && (
-              <>
-                {campaign.client_targeting_brief_data?.completed_at && !clientTargetingEditMode ? (
-                  <ClientTargetingBriefSummary
-                    data={campaign.client_targeting_brief_data}
-                    campaignName={campaign.name}
-                    workspaceName={clientName}
-                    isInternalUser={isInternalUser}
-                    onEditClick={() => setClientTargetingEditMode(true)}
-                  />
-                ) : (
-                  <ClientTargetingBriefForm
-                    campaignId={campaignId!}
-                    campaignName={campaign.name}
-                    workspaceName={clientName}
-                    initialData={campaign.client_targeting_brief_data}
-                    isInternalUser={isInternalUser}
-                    onCompleted={handleClientTargetingCompleted}
-                    onDataUpdated={handleClientTargetingDataUpdated}
-                  />
-                )}
-              </>
-            )}
           </TabsContent>
 
           <TabsContent value="onboarding" className="space-y-6">
@@ -765,35 +740,29 @@ export default function WorkspaceCampaignView() {
               </>
             )}
 
-            {/* Client Onboarding (existing) */}
-            {campaign.target !== 'Candidate' && (
-              <CampaignOnboardingForm
-                campaignId={campaignId!}
-                isCompleted={onboardingCompleted}
-                onCompleted={handleOnboardingCompleted}
-                initialData={campaign ? {
-                  target_job_titles: campaign.onboarding_target_job_titles || '',
-                  industries_to_target: campaign.onboarding_industries_to_target || '',
-                  company_size_range: campaign.onboarding_company_size_range || '',
-                  required_skills: campaign.onboarding_required_skills || '',
-                  locations_to_target: campaign.onboarding_locations_to_target || '',
-                  excluded_industries: campaign.onboarding_excluded_industries || '',
-                  example_ideal_companies: campaign.onboarding_example_ideal_companies || '',
-                  value_proposition: campaign.onboarding_value_proposition || '',
-                  key_pain_points: campaign.onboarding_key_pain_points || '',
-                  unique_differentiator: campaign.onboarding_unique_differentiator || '',
-                  example_messaging: campaign.onboarding_example_messaging || '',
-                  common_objections: campaign.onboarding_common_objections || '',
-                  recommended_responses: campaign.onboarding_recommended_responses || '',
-                  compliance_notes: campaign.onboarding_compliance_notes || '',
-                  qualified_prospect_definition: campaign.onboarding_qualified_prospect_definition || '',
-                  disqualifying_factors: campaign.onboarding_disqualifying_factors || '',
-                  scheduling_link: campaign.onboarding_scheduling_link || '',
-                  target_timezone: campaign.onboarding_target_timezone || '',
-                  booking_instructions: campaign.onboarding_booking_instructions || '',
-                  bdr_notes: campaign.onboarding_bdr_notes || '',
-                } : undefined}
-              />
+            {/* Client Targeting Brief */}
+            {campaign.target === 'Client' && (
+              <>
+                {campaign.client_targeting_brief_data?.completed_at && !clientTargetingEditMode ? (
+                  <ClientTargetingBriefSummary
+                    data={campaign.client_targeting_brief_data}
+                    campaignName={campaign.name}
+                    workspaceName={clientName}
+                    isInternalUser={isInternalUser}
+                    onEditClick={() => setClientTargetingEditMode(true)}
+                  />
+                ) : (
+                  <ClientTargetingBriefForm
+                    campaignId={campaignId!}
+                    campaignName={campaign.name}
+                    workspaceName={clientName}
+                    initialData={campaign.client_targeting_brief_data}
+                    isInternalUser={isInternalUser}
+                    onCompleted={handleClientTargetingCompleted}
+                    onDataUpdated={handleClientTargetingDataUpdated}
+                  />
+                )}
+              </>
             )}
           </TabsContent>
 
