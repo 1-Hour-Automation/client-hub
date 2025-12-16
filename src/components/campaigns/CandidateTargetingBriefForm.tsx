@@ -138,56 +138,68 @@ const SUCCESS_DEFINITIONS = [
 ] as const;
 
 const candidateTargetingBriefSchema = z.object({
-  // Section 1: Search Overview (required for targeting activation)
-  primary_objective: z.string().optional(),
-  search_scope: z.string().optional(),
+  // Section 1: Search Overview (required)
+  primary_objective: z.string().min(1, 'This field is required'),
+  search_scope: z.string().min(1, 'This field is required'),
 
-  // Section 2: Target Role Definition
-  target_job_titles: z.string().optional(),
-  core_function: z.string().optional(),
-  seniority_levels: z.array(z.string()).optional(),
+  // Section 2: Target Role Definition (required)
+  target_job_titles: z.string().min(1, 'This field is required'),
+  core_function: z.string().min(1, 'This field is required'),
+  seniority_levels: z.array(z.string()).min(1, 'Select at least one option'),
 
-  // Section 3: Industry or Domain Background
-  industry_backgrounds: z.array(z.string()).optional(),
+  // Section 3: Industry or Domain Background (required)
+  industry_backgrounds: z.array(z.string()).min(1, 'Select at least one option'),
   other_industry_domain: z.string().optional(),
 
   // Section 4: Experience & Credentials
-  years_of_experience: z.string().optional(),
-  must_have_experience: z.string().optional(),
+  years_of_experience: z.string().min(1, 'This field is required'),
+  must_have_experience: z.string().min(1, 'This field is required'),
   nice_to_have_experience: z.string().optional(),
 
   // Section 5: Location & Working Preferences
-  candidate_locations: z.array(z.string()).optional(),
+  candidate_locations: z.array(z.string()).min(1, 'Select at least one option'),
   priority_cities_regions: z.string().optional(),
-  remote_hybrid_acceptable: z.string().optional(),
+  remote_hybrid_acceptable: z.string().min(1, 'This field is required'),
 
   // Section 6: Current Situation & Mobility
   likely_current_employers: z.string().optional(),
-  expected_move_type: z.string().optional(),
-  typical_openness: z.string().optional(),
+  expected_move_type: z.string().min(1, 'This field is required'),
+  typical_openness: z.string().min(1, 'This field is required'),
 
   // Section 7: Motivation & Constraints
-  common_move_reasons: z.array(z.string()).optional(),
+  common_move_reasons: z.array(z.string()).min(1, 'Select at least one option'),
   non_negotiables_constraints: z.string().optional(),
 
-  // Section 8: Outreach & Calling Practicalities
+  // Section 8: Outreach & Calling Practicalities (all optional)
   best_seniority_to_call: z.string().optional(),
   profiles_to_avoid: z.string().optional(),
   preferred_calling_windows: z.array(z.string()).optional(),
 
   // Section 9: Qualification Rules
-  strong_fit_signals: z.array(z.string()).optional(),
+  strong_fit_signals: z.array(z.string()).min(1, 'Select at least one option'),
   disqualifiers: z.array(z.string()).optional(),
 
   // Section 10: First Conversation Outcome
-  success_definitions: z.array(z.string()).optional(),
+  success_definitions: z.array(z.string()).min(1, 'Select at least one option'),
   conversation_booked_with: z.string().optional(),
 
-  // Section 11: Additional Context
+  // Section 11: Additional Context (all optional)
   comparable_searches: z.string().optional(),
   red_flags_sensitivities: z.string().optional(),
   additional_targeting_notes: z.string().optional(),
-});
+}).refine(
+  (data) => {
+    // If "Other" is selected in industry_backgrounds, other_industry_domain is required
+    if (data.industry_backgrounds?.includes('Other')) {
+      return data.other_industry_domain && data.other_industry_domain.trim().length > 0;
+    }
+    return true;
+  },
+  {
+    message: 'Please specify the other industry or domain',
+    path: ['other_industry_domain'],
+  }
+);
 
 type CandidateTargetingBriefFormValues = z.infer<typeof candidateTargetingBriefSchema>;
 
@@ -209,11 +221,12 @@ interface MultiSelectFieldProps {
   options: readonly string[];
   value: string[];
   onChange: (value: string[]) => void;
+  hasError?: boolean;
 }
 
-function MultiSelectField({ options, value, onChange }: MultiSelectFieldProps) {
+function MultiSelectField({ options, value, onChange, hasError }: MultiSelectFieldProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+    <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 ${hasError ? 'rounded-md ring-1 ring-destructive p-2' : ''}`}>
       {options.map((option) => (
         <label
           key={option}
@@ -247,7 +260,6 @@ export function CandidateTargetingBriefForm({
 }: CandidateTargetingBriefFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasAttemptedSave, setHasAttemptedSave] = useState(false);
 
   const form = useForm<CandidateTargetingBriefFormValues>({
     resolver: zodResolver(candidateTargetingBriefSchema),
@@ -287,7 +299,6 @@ export function CandidateTargetingBriefForm({
   const showOtherIndustry = watchedIndustries?.includes('Other');
 
   async function onSubmit(values: CandidateTargetingBriefFormValues) {
-    setHasAttemptedSave(true);
     setIsSubmitting(true);
     try {
       const dataToSave: CandidateTargetingBriefData = {
@@ -302,12 +313,9 @@ export function CandidateTargetingBriefForm({
 
       if (error) throw error;
 
-      const missingRequired = !values.primary_objective || !values.search_scope;
       toast({
         title: 'Targeting brief saved',
-        description: missingRequired
-          ? 'Saved successfully. Complete the required fields in Section 1 to activate targeting.'
-          : 'Your candidate targeting brief has been saved successfully.',
+        description: 'Your candidate targeting brief has been saved successfully.',
       });
 
       onDataUpdated(dataToSave);
@@ -359,70 +367,55 @@ export function CandidateTargetingBriefForm({
                 <Target className="h-4 w-4 text-primary" />
                 Section 1: Search Overview
               </h3>
-              <p className="text-xs text-muted-foreground">
-                These two fields are required to activate targeting logic. All other fields are optional and can be completed progressively.
-              </p>
 
               <FormField
                 control={form.control}
                 name="primary_objective"
-                render={({ field }) => {
-                  const isMissing = hasAttemptedSave && !field.value;
-                  return (
-                    <FormItem>
-                      <FormLabel>
-                        Primary Objective of This Candidate Search <span className="text-destructive">*</span>
-                      </FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger className={isMissing ? 'border-destructive' : ''}>
-                            <SelectValue placeholder="Select primary objective" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {PRIMARY_OBJECTIVES.map((obj) => (
-                            <SelectItem key={obj} value={obj}>{obj}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {isMissing && (
-                        <p className="text-xs text-destructive">Required to activate targeting</p>
-                      )}
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Primary Objective of This Candidate Search <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className={fieldState.error ? 'border-destructive' : ''}>
+                          <SelectValue placeholder="Select primary objective" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {PRIMARY_OBJECTIVES.map((obj) => (
+                          <SelectItem key={obj} value={obj}>{obj}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
 
               <FormField
                 control={form.control}
                 name="search_scope"
-                render={({ field }) => {
-                  const isMissing = hasAttemptedSave && !field.value;
-                  return (
-                    <FormItem>
-                      <FormLabel>
-                        Search Scope <span className="text-destructive">*</span>
-                      </FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger className={isMissing ? 'border-destructive' : ''}>
-                            <SelectValue placeholder="Select search scope" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {SEARCH_SCOPES.map((scope) => (
-                            <SelectItem key={scope} value={scope}>{scope}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {isMissing && (
-                        <p className="text-xs text-destructive">Required to activate targeting</p>
-                      )}
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Search Scope <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className={fieldState.error ? 'border-destructive' : ''}>
+                          <SelectValue placeholder="Select search scope" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {SEARCH_SCOPES.map((scope) => (
+                          <SelectItem key={scope} value={scope}>{scope}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
 
@@ -436,13 +429,15 @@ export function CandidateTargetingBriefForm({
               <FormField
                 control={form.control}
                 name="target_job_titles"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Target Job Title(s)</FormLabel>
+                    <FormLabel>
+                      Target Job Title(s) <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="e.g., Senior Legal Secretary, Paralegal, Legal PA"
-                        className="min-h-[80px]"
+                        className={`min-h-[80px] ${fieldState.error ? 'border-destructive' : ''}`}
                         {...field}
                       />
                     </FormControl>
@@ -455,12 +450,14 @@ export function CandidateTargetingBriefForm({
               <FormField
                 control={form.control}
                 name="core_function"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Core Function</FormLabel>
+                    <FormLabel>
+                      Core Function <span className="text-destructive">*</span>
+                    </FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className={fieldState.error ? 'border-destructive' : ''}>
                           <SelectValue placeholder="Select core function" />
                         </SelectTrigger>
                       </FormControl>
@@ -478,13 +475,16 @@ export function CandidateTargetingBriefForm({
               <FormField
                 control={form.control}
                 name="seniority_levels"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Seniority Level</FormLabel>
+                    <FormLabel>
+                      Seniority Level <span className="text-destructive">*</span>
+                    </FormLabel>
                     <MultiSelectField
                       options={SENIORITY_LEVELS}
                       value={field.value || []}
                       onChange={field.onChange}
+                      hasError={!!fieldState.error}
                     />
                     <FormMessage />
                   </FormItem>
@@ -502,13 +502,16 @@ export function CandidateTargetingBriefForm({
               <FormField
                 control={form.control}
                 name="industry_backgrounds"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Industry or Domain Background</FormLabel>
+                    <FormLabel>
+                      Industry or Domain Background <span className="text-destructive">*</span>
+                    </FormLabel>
                     <MultiSelectField
                       options={INDUSTRY_BACKGROUNDS}
                       value={field.value || []}
                       onChange={field.onChange}
+                      hasError={!!fieldState.error}
                     />
                     <p className="text-xs text-muted-foreground">Select the industries the candidate is most experienced in.</p>
                     <FormMessage />
@@ -520,13 +523,15 @@ export function CandidateTargetingBriefForm({
                 <FormField
                   control={form.control}
                   name="other_industry_domain"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
-                      <FormLabel>Please specify other industry or domain</FormLabel>
+                      <FormLabel>
+                        Please specify other industry or domain <span className="text-destructive">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="Specify other industry or domain background"
-                          className="min-h-[80px]"
+                          className={`min-h-[80px] ${fieldState.error ? 'border-destructive' : ''}`}
                           {...field}
                         />
                       </FormControl>
@@ -547,12 +552,14 @@ export function CandidateTargetingBriefForm({
               <FormField
                 control={form.control}
                 name="years_of_experience"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Years of Relevant Experience</FormLabel>
+                    <FormLabel>
+                      Years of Relevant Experience <span className="text-destructive">*</span>
+                    </FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className={fieldState.error ? 'border-destructive' : ''}>
                           <SelectValue placeholder="Select experience range" />
                         </SelectTrigger>
                       </FormControl>
@@ -570,13 +577,15 @@ export function CandidateTargetingBriefForm({
               <FormField
                 control={form.control}
                 name="must_have_experience"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Must-Have Experience or Credentials</FormLabel>
+                    <FormLabel>
+                      Must-Have Experience or Credentials <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="e.g., Certifications, practice areas, tools, deal exposure"
-                        className="min-h-[80px]"
+                        className={`min-h-[80px] ${fieldState.error ? 'border-destructive' : ''}`}
                         {...field}
                       />
                     </FormControl>
@@ -614,13 +623,16 @@ export function CandidateTargetingBriefForm({
               <FormField
                 control={form.control}
                 name="candidate_locations"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Candidate Location</FormLabel>
+                    <FormLabel>
+                      Candidate Location <span className="text-destructive">*</span>
+                    </FormLabel>
                     <MultiSelectField
                       options={CANDIDATE_LOCATIONS}
                       value={field.value || []}
                       onChange={field.onChange}
+                      hasError={!!fieldState.error}
                     />
                     <FormMessage />
                   </FormItem>
@@ -632,7 +644,7 @@ export function CandidateTargetingBriefForm({
                 name="priority_cities_regions"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Priority Cities or Regions</FormLabel>
+                    <FormLabel>Priority Cities or Regions (Optional)</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="e.g., London, Manchester, Birmingham"
@@ -648,12 +660,14 @@ export function CandidateTargetingBriefForm({
               <FormField
                 control={form.control}
                 name="remote_hybrid_acceptable"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Remote or Hybrid Acceptable</FormLabel>
+                    <FormLabel>
+                      Remote or Hybrid Acceptable <span className="text-destructive">*</span>
+                    </FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className={fieldState.error ? 'border-destructive' : ''}>
                           <SelectValue placeholder="Select option" />
                         </SelectTrigger>
                       </FormControl>
@@ -681,7 +695,7 @@ export function CandidateTargetingBriefForm({
                 name="likely_current_employers"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Likely Current Employers or Employer Types</FormLabel>
+                    <FormLabel>Likely Current Employers or Employer Types (Optional)</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Describe typical current employers or employer types"
@@ -697,12 +711,14 @@ export function CandidateTargetingBriefForm({
               <FormField
                 control={form.control}
                 name="expected_move_type"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Expected Move Type</FormLabel>
+                    <FormLabel>
+                      Expected Move Type <span className="text-destructive">*</span>
+                    </FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className={fieldState.error ? 'border-destructive' : ''}>
                           <SelectValue placeholder="Select move type" />
                         </SelectTrigger>
                       </FormControl>
@@ -720,12 +736,14 @@ export function CandidateTargetingBriefForm({
               <FormField
                 control={form.control}
                 name="typical_openness"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Typical Openness to New Opportunities</FormLabel>
+                    <FormLabel>
+                      Typical Openness to New Opportunities <span className="text-destructive">*</span>
+                    </FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className={fieldState.error ? 'border-destructive' : ''}>
                           <SelectValue placeholder="Select openness level" />
                         </SelectTrigger>
                       </FormControl>
@@ -751,13 +769,16 @@ export function CandidateTargetingBriefForm({
               <FormField
                 control={form.control}
                 name="common_move_reasons"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Common Reasons Candidates Might Move</FormLabel>
+                    <FormLabel>
+                      Common Reasons Candidates Might Move <span className="text-destructive">*</span>
+                    </FormLabel>
                     <MultiSelectField
                       options={MOVE_REASONS}
                       value={field.value || []}
                       onChange={field.onChange}
+                      hasError={!!fieldState.error}
                     />
                     <FormMessage />
                   </FormItem>
@@ -769,7 +790,7 @@ export function CandidateTargetingBriefForm({
                 name="non_negotiables_constraints"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Non-Negotiables or Hard Constraints</FormLabel>
+                    <FormLabel>Non-Negotiables or Hard Constraints (Optional)</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="e.g., Salary floor, visa issues, remote-only"
@@ -795,7 +816,7 @@ export function CandidateTargetingBriefForm({
                 name="best_seniority_to_call"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Best Seniority Levels to Call Directly</FormLabel>
+                    <FormLabel>Best Seniority Levels to Call Directly (Optional)</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Describe which seniority levels respond best to direct calls"
@@ -813,7 +834,7 @@ export function CandidateTargetingBriefForm({
                 name="profiles_to_avoid"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Any Profiles to Avoid Calling</FormLabel>
+                    <FormLabel>Any Profiles to Avoid Calling (Optional)</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Describe any profiles or types of candidates to avoid"
@@ -831,7 +852,7 @@ export function CandidateTargetingBriefForm({
                 name="preferred_calling_windows"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Preferred Calling Window (Local Time)</FormLabel>
+                    <FormLabel>Preferred Calling Window (Local Time) (Optional)</FormLabel>
                     <MultiSelectField
                       options={CALLING_WINDOWS}
                       value={field.value || []}
@@ -853,13 +874,16 @@ export function CandidateTargetingBriefForm({
               <FormField
                 control={form.control}
                 name="strong_fit_signals"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>What Makes a Candidate a Strong Fit</FormLabel>
+                    <FormLabel>
+                      What Makes a Candidate a Strong Fit <span className="text-destructive">*</span>
+                    </FormLabel>
                     <MultiSelectField
                       options={STRONG_FIT_SIGNALS}
                       value={field.value || []}
                       onChange={field.onChange}
+                      hasError={!!fieldState.error}
                     />
                     <FormMessage />
                   </FormItem>
@@ -871,7 +895,7 @@ export function CandidateTargetingBriefForm({
                 name="disqualifiers"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>What Disqualifies a Candidate</FormLabel>
+                    <FormLabel>What Disqualifies a Candidate (Optional)</FormLabel>
                     <MultiSelectField
                       options={DISQUALIFIERS}
                       value={field.value || []}
@@ -893,13 +917,16 @@ export function CandidateTargetingBriefForm({
               <FormField
                 control={form.control}
                 name="success_definitions"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>What Defines Success for the First Conversation</FormLabel>
+                    <FormLabel>
+                      What Defines Success for the First Conversation <span className="text-destructive">*</span>
+                    </FormLabel>
                     <MultiSelectField
                       options={SUCCESS_DEFINITIONS}
                       value={field.value || []}
                       onChange={field.onChange}
+                      hasError={!!fieldState.error}
                     />
                     <FormMessage />
                   </FormItem>
@@ -911,7 +938,7 @@ export function CandidateTargetingBriefForm({
                 name="conversation_booked_with"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Who Should the Conversation Be Booked With</FormLabel>
+                    <FormLabel>Who Should the Conversation Be Booked With (Optional)</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Describe who follow-up conversations should be scheduled with"
