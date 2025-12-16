@@ -96,14 +96,18 @@ export default function WorkspaceDashboard() {
           .eq('client_id', clientId)
           .eq('status', 'active');
 
-        // Fetch contacts reached this week (using created_at as proxy)
-        // TODO: Track actual "reached" status when call logging is implemented
-        const { count: contactsReachedCount } = await supabase
-          .from('contacts')
-          .select('id', { count: 'exact', head: true })
+        // Fetch contacts reached this week (unique contacts from call_logs)
+        const { data: callLogsThisWeek } = await supabase
+          .from('call_logs')
+          .select('contact_id')
           .eq('client_id', clientId)
-          .gte('created_at', weekStart)
-          .lte('created_at', weekEnd);
+          .gte('call_time', weekStart)
+          .lte('call_time', weekEnd);
+        
+        const uniqueContactIds = new Set(
+          callLogsThisWeek?.filter(log => log.contact_id).map(log => log.contact_id) || []
+        );
+        const contactsReachedCount = uniqueContactIds.size;
 
         setKpis({
           attendedMeetings: attendedCount ?? 0,

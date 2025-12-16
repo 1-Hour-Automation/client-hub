@@ -1,10 +1,15 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
+interface MetricWithTrend {
+  current: number;
+  previous: number;
+}
+
 interface ActivitySnapshotProps {
-  contactsReached: number;
-  connects: number;
-  positiveConversations: number;
+  contactsReached: MetricWithTrend;
+  connects: MetricWithTrend;
+  positiveConversations: MetricWithTrend;
   isLoading: boolean;
 }
 
@@ -13,6 +18,12 @@ interface SnapshotCardProps {
   value: number;
   trend: 'up' | 'down' | 'flat';
   isLoading: boolean;
+}
+
+function calculateTrend(current: number, previous: number): 'up' | 'down' | 'flat' {
+  if (current > previous) return 'up';
+  if (current < previous) return 'down';
+  return 'flat';
 }
 
 function SnapshotCard({ label, value, trend, isLoading }: SnapshotCardProps) {
@@ -44,10 +55,9 @@ export function ActivitySnapshot({
   positiveConversations,
   isLoading,
 }: ActivitySnapshotProps) {
-  // TODO: Implement real trend logic based on previous week comparison
-  const contactsTrend = contactsReached > 10 ? 'up' : contactsReached > 5 ? 'flat' : 'down';
-  const connectsTrend = connects > 5 ? 'up' : connects > 2 ? 'flat' : 'down';
-  const conversationsTrend = positiveConversations > 3 ? 'up' : positiveConversations > 0 ? 'flat' : 'down';
+  const contactsTrend = calculateTrend(contactsReached.current, contactsReached.previous);
+  const connectsTrend = calculateTrend(connects.current, connects.previous);
+  const conversationsTrend = calculateTrend(positiveConversations.current, positiveConversations.previous);
 
   return (
     <div className="space-y-3">
@@ -55,19 +65,19 @@ export function ActivitySnapshot({
       <div className="grid gap-3 grid-cols-3">
         <SnapshotCard
           label="Contacts Reached"
-          value={contactsReached}
+          value={contactsReached.current}
           trend={contactsTrend}
           isLoading={isLoading}
         />
         <SnapshotCard
           label="Connects"
-          value={connects}
+          value={connects.current}
           trend={connectsTrend}
           isLoading={isLoading}
         />
         <SnapshotCard
           label="Positive Conversations"
-          value={positiveConversations}
+          value={positiveConversations.current}
           trend={conversationsTrend}
           isLoading={isLoading}
         />
@@ -75,3 +85,5 @@ export function ActivitySnapshot({
     </div>
   );
 }
+
+export type { MetricWithTrend };
