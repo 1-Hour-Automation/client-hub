@@ -517,18 +517,21 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          last_sign_in_at: string | null
         }
         Insert: {
           client_id?: string | null
           created_at?: string
           display_name?: string | null
           id: string
+          last_sign_in_at?: string | null
         }
         Update: {
           client_id?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
+          last_sign_in_at?: string | null
         }
         Relationships: [
           {
