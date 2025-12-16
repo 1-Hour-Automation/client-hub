@@ -1,6 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { LogOut, Phone } from 'lucide-react';
+import { GlobalSearch } from './GlobalSearch';
 
 interface TopBarProps {
   clientName?: string;
@@ -21,6 +22,7 @@ export function TopBar({ clientName }: TopBarProps) {
           </div>
           <span className="font-semibold text-lg text-foreground">CallFlow Portal</span>
         </div>
+        <GlobalSearch />
       </div>
 
       <div className="flex items-center gap-4">
