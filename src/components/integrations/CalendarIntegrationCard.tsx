@@ -2,41 +2,73 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Check, Loader2 } from 'lucide-react';
+import { Calendar, Check, Loader2, RefreshCw, Clock, AlertCircle } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface CalendarIntegrationCardProps {
   clientId: string;
   calendarConnected: boolean;
   calendarProvider: string | null;
-  onUpdate: (connected: boolean, provider: string | null) => void;
+  syncEnabled: boolean;
+  lastSyncedAt: string | null;
+  watchedCalendars: string[];
+  onUpdate: (data: {
+    connected: boolean;
+    provider: string | null;
+    syncEnabled: boolean;
+    lastSyncedAt: string | null;
+    watchedCalendars: string[];
+  }) => void;
 }
+
+const SAMPLE_CALENDARS = [
+  { id: 'primary', name: 'Primary Calendar' },
+  { id: 'work', name: 'Work Calendar' },
+  { id: 'personal', name: 'Personal Calendar' },
+  { id: 'holidays', name: 'Holidays' },
+];
 
 export function CalendarIntegrationCard({
   clientId,
   calendarConnected,
   calendarProvider,
+  syncEnabled,
+  lastSyncedAt,
+  watchedCalendars,
   onUpdate,
 }: CalendarIntegrationCardProps) {
   const { toast } = useToast();
   const [isConnecting, setIsConnecting] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   async function handleConnect(provider: 'google' | 'outlook') {
     setIsConnecting(provider);
     try {
-      // For now, this is a UI-only placeholder that updates the database
       const { error } = await supabase
         .from('clients')
         .update({
           calendar_connected: true,
           calendar_provider: provider,
+          sync_enabled: true,
+          last_synced_at: new Date().toISOString(),
+          watched_calendars: ['primary'],
         })
         .eq('id', clientId);
 
       if (error) throw error;
 
-      onUpdate(true, provider);
+      onUpdate({
+        connected: true,
+        provider,
+        syncEnabled: true,
+        lastSyncedAt: new Date().toISOString(),
+        watchedCalendars: ['primary'],
+      });
       toast({
         title: 'Calendar connected',
         description: `${provider === 'google' ? 'Google Calendar' : 'Outlook'} has been connected.`,
@@ -61,12 +93,21 @@ export function CalendarIntegrationCard({
         .update({
           calendar_connected: false,
           calendar_provider: null,
+          sync_enabled: false,
+          last_synced_at: null,
+          watched_calendars: [],
         })
         .eq('id', clientId);
 
       if (error) throw error;
 
-      onUpdate(false, null);
+      onUpdate({
+        connected: false,
+        provider: null,
+        syncEnabled: false,
+        lastSyncedAt: null,
+        watchedCalendars: [],
+      });
       toast({
         title: 'Calendar disconnected',
         description: 'Your calendar has been disconnected.',
@@ -80,6 +121,95 @@ export function CalendarIntegrationCard({
       });
     } finally {
       setIsConnecting(null);
+    }
+  }
+
+  async function handleToggleSync(enabled: boolean) {
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ sync_enabled: enabled })
+        .eq('id', clientId);
+
+      if (error) throw error;
+
+      onUpdate({
+        connected: calendarConnected,
+        provider: calendarProvider,
+        syncEnabled: enabled,
+        lastSyncedAt,
+        watchedCalendars,
+      });
+      toast({
+        title: enabled ? 'Two-way sync enabled' : 'Two-way sync disabled',
+        description: enabled
+          ? 'New meetings will be written to your calendar.'
+          : 'Meetings will no longer sync to your calendar.',
+      });
+    } catch (error) {
+      console.error('Failed to toggle sync:', error);
+    }
+  }
+
+  async function handleToggleWatchedCalendar(calendarId: string, watched: boolean) {
+    const newWatched = watched
+      ? [...watchedCalendars, calendarId]
+      : watchedCalendars.filter(id => id !== calendarId);
+
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ watched_calendars: newWatched })
+        .eq('id', clientId);
+
+      if (error) throw error;
+
+      onUpdate({
+        connected: calendarConnected,
+        provider: calendarProvider,
+        syncEnabled,
+        lastSyncedAt,
+        watchedCalendars: newWatched,
+      });
+    } catch (error) {
+      console.error('Failed to update watched calendars:', error);
+    }
+  }
+
+  async function handleManualSync() {
+    setIsSyncing(true);
+    try {
+      // Simulate sync operation
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const newSyncTime = new Date().toISOString();
+      const { error } = await supabase
+        .from('clients')
+        .update({ last_synced_at: newSyncTime })
+        .eq('id', clientId);
+
+      if (error) throw error;
+
+      onUpdate({
+        connected: calendarConnected,
+        provider: calendarProvider,
+        syncEnabled,
+        lastSyncedAt: newSyncTime,
+        watchedCalendars,
+      });
+      toast({
+        title: 'Sync complete',
+        description: 'Your calendar has been synchronized.',
+      });
+    } catch (error) {
+      console.error('Failed to sync:', error);
+      toast({
+        title: 'Sync failed',
+        description: 'Failed to sync calendar. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSyncing(false);
     }
   }
 
@@ -117,16 +247,87 @@ export function CalendarIntegrationCard({
           )}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
         {calendarConnected ? (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-              <div>
-                <p className="font-medium text-sm">{getProviderLabel(calendarProvider)}</p>
-                <p className="text-xs text-muted-foreground">
-                  Your calendar is synced for availability
-                </p>
+          <>
+            {/* Sync Status Dashboard */}
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="text-xs text-muted-foreground mb-1">Provider</p>
+                <p className="font-medium text-sm">{getProviderLabel(calendarProvider)} Sync</p>
+                <Badge variant="secondary" className="mt-1 bg-emerald-50 text-emerald-700 text-xs">
+                  Active
+                </Badge>
               </div>
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="text-xs text-muted-foreground mb-1">Last Synced</p>
+                <p className="font-medium text-sm">
+                  {lastSyncedAt ? format(new Date(lastSyncedAt), 'MMM d, h:mm a') : 'Never'}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-1 h-6 px-2 text-xs"
+                  onClick={handleManualSync}
+                  disabled={isSyncing}
+                >
+                  {isSyncing ? (
+                    <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                  ) : (
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                  )}
+                  Sync Now
+                </Button>
+              </div>
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <p className="text-xs text-muted-foreground mb-1">Two-Way Sync</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Switch
+                    checked={syncEnabled}
+                    onCheckedChange={handleToggleSync}
+                  />
+                  <span className="text-sm font-medium">
+                    {syncEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Check for Conflicts */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                <Label className="font-medium">Check for Conflicts</Label>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Select which calendars to check for busy times when booking:
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {SAMPLE_CALENDARS.map((cal) => (
+                  <div
+                    key={cal.id}
+                    className="flex items-center space-x-2 p-2 rounded-lg border border-border/50 hover:bg-muted/50"
+                  >
+                    <Checkbox
+                      id={`cal-${cal.id}`}
+                      checked={watchedCalendars.includes(cal.id)}
+                      onCheckedChange={(checked) =>
+                        handleToggleWatchedCalendar(cal.id, checked === true)
+                      }
+                    />
+                    <Label
+                      htmlFor={`cal-${cal.id}`}
+                      className="flex-1 cursor-pointer text-sm font-normal"
+                    >
+                      {cal.name}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Disconnect */}
+            <div className="pt-4 border-t">
               <Button
                 variant="outline"
                 size="sm"
@@ -134,13 +335,12 @@ export function CalendarIntegrationCard({
                 disabled={isConnecting !== null}
               >
                 {isConnecting === 'disconnect' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Disconnect'
-                )}
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                Disconnect Calendar
               </Button>
             </div>
-          </div>
+          </>
         ) : (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground mb-4">
