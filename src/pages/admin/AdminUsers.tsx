@@ -11,9 +11,10 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { UserCog, Shield, Edit, UserPlus, Building2, Plus, Trash2 } from 'lucide-react';
+import { UserCog, Shield, Edit, UserPlus, Building2, Plus, Trash2, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
+import { Checkbox } from '@/components/ui/checkbox';
 type AppRole = 'admin' | 'bdr' | 'am' | 'client';
 interface UserRow {
   id: string;
@@ -23,6 +24,7 @@ interface UserRow {
   created_at: string;
   roles: AppRole[];
   email: string | null;
+  last_sign_in_at: string | null;
 }
 interface Client {
   id: string;
@@ -45,6 +47,7 @@ export default function AdminUsers() {
   const [workspaceDrawerUser, setWorkspaceDrawerUser] = useState<UserRow | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserRow | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [workspaceSearch, setWorkspaceSearch] = useState('');
   const {
     toast
   } = useToast();
@@ -60,7 +63,7 @@ export default function AdminUsers() {
       const {
         data: profilesData,
         error: profilesError
-      } = await supabase.from('user_profiles').select('id, display_name, client_id, created_at').order('created_at', {
+      } = await supabase.from('user_profiles').select('id, display_name, client_id, created_at, last_sign_in_at').order('created_at', {
         ascending: false
       });
       if (profilesError) throw profilesError;
@@ -81,7 +84,8 @@ export default function AdminUsers() {
           ...profile,
           roles: userRoles,
           client_name: clientName,
-          email: null // We don't have direct access to auth.users
+          email: null, // We don't have direct access to auth.users
+          last_sign_in_at: profile.last_sign_in_at
         };
       });
       setUsers(usersWithRoles);
@@ -261,12 +265,22 @@ export default function AdminUsers() {
           </Badge>)}
       </div>;
   };
+  const getStatusBadge = (row: UserRow) => {
+    if (row.last_sign_in_at) {
+      return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Active</Badge>;
+    }
+    return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Pending</Badge>;
+  };
+
   const columns = [{
     header: 'User',
     accessor: (row: UserRow) => <div>
           <p className="font-medium">{row.display_name || 'Unnamed User'}</p>
           <p className="text-xs text-muted-foreground">{row.id.slice(0, 8)}...</p>
         </div>
+  }, {
+    header: 'Status',
+    accessor: (row: UserRow) => getStatusBadge(row)
   }, {
     header: 'Roles',
     accessor: (row: UserRow) => getRoleBadges(row.roles)
@@ -396,21 +410,56 @@ export default function AdminUsers() {
 
               <div className="space-y-2">
                 <Label>Workspaces Assigned</Label>
-                <div className="border rounded-md p-3 space-y-2 max-h-48 overflow-y-auto">
-                  {clients.length === 0 ? <p className="text-sm text-muted-foreground">No workspaces available</p> : clients.map(client => <label key={client.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded">
-                        <input type="checkbox" checked={inviteWorkspaceIds.includes(client.id)} onChange={e => {
-                    if (e.target.checked) {
-                      setInviteWorkspaceIds([...inviteWorkspaceIds, client.id]);
-                    } else {
-                      setInviteWorkspaceIds(inviteWorkspaceIds.filter(id => id !== client.id));
-                    }
-                  }} className="rounded border-input" />
-                        <span className="text-sm">{client.name}</span>
-                      </label>)}
+                <div className="border rounded-md overflow-hidden">
+                  <div className="p-2 border-b bg-muted/30">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Search workspaces..."
+                        value={workspaceSearch}
+                        onChange={(e) => setWorkspaceSearch(e.target.value)}
+                        className="pl-8 h-8"
+                      />
+                    </div>
+                  </div>
+                  <div className="p-2 space-y-1 max-h-48 overflow-y-auto">
+                    {clients.length === 0 ? (
+                      <p className="text-sm text-muted-foreground p-1">No workspaces available</p>
+                    ) : (
+                      clients
+                        .filter(client => 
+                          client.name.toLowerCase().includes(workspaceSearch.toLowerCase())
+                        )
+                        .map(client => (
+                          <label
+                            key={client.id}
+                            className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1.5 rounded"
+                          >
+                            <Checkbox
+                              checked={inviteWorkspaceIds.includes(client.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setInviteWorkspaceIds([...inviteWorkspaceIds, client.id]);
+                                } else {
+                                  setInviteWorkspaceIds(inviteWorkspaceIds.filter(id => id !== client.id));
+                                }
+                              }}
+                            />
+                            <span className="text-sm">{client.name}</span>
+                          </label>
+                        ))
+                    )}
+                    {clients.length > 0 && clients.filter(c => c.name.toLowerCase().includes(workspaceSearch.toLowerCase())).length === 0 && (
+                      <p className="text-sm text-muted-foreground p-1">No workspaces match "{workspaceSearch}"</p>
+                    )}
+                  </div>
                 </div>
-                {inviteWorkspaceIds.length > 0 && <p className="text-xs text-muted-foreground">
+                {inviteWorkspaceIds.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
                     {inviteWorkspaceIds.length} workspace{inviteWorkspaceIds.length !== 1 ? 's' : ''} selected
-                  </p>}
+                  </p>
+                )}
               </div>
 
               <Button className="w-full" disabled={!inviteEmail.trim() || !inviteRole || isInviting} onClick={handleInviteUser}>

@@ -91,6 +91,14 @@ export default function Auth() {
           variant: 'destructive',
         });
       } else {
+        // Update last_sign_in_at to mark account as active
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id) {
+          await supabase
+            .from('user_profiles')
+            .update({ last_sign_in_at: new Date().toISOString() })
+            .eq('id', user.id);
+        }
         toast({
           title: 'Welcome!',
           description: 'Your password has been set successfully.',
@@ -109,7 +117,8 @@ export default function Auth() {
 
     try {
       if (view === 'login') {
-        const { error } = await signIn(email, password);
+        // Use supabase directly to get user data for tracking
+        const { error, data } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
           toast({
             title: 'Sign in failed',
@@ -117,6 +126,13 @@ export default function Auth() {
             variant: 'destructive',
           });
         } else {
+          // Update last_sign_in_at to track user activity
+          if (data?.user?.id) {
+            await supabase
+              .from('user_profiles')
+              .update({ last_sign_in_at: new Date().toISOString() })
+              .eq('id', data.user.id);
+          }
           navigate('/');
         }
       } else if (view === 'signup') {
