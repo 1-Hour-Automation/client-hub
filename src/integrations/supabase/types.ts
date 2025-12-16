@@ -162,6 +162,7 @@ export type Database = {
       clients: {
         Row: {
           account_manager: string | null
+          availability_settings: Json | null
           bdr_assigned: string | null
           best_times: string | null
           billing_address: string | null
@@ -169,6 +170,8 @@ export type Database = {
           billing_contact_name: string | null
           billing_contact_phone: string | null
           billing_notes: string | null
+          calendar_connected: boolean | null
+          calendar_provider: string | null
           calling_hours: string | null
           calling_timezone: string | null
           campaign_start_date: string | null
@@ -203,6 +206,7 @@ export type Database = {
         }
         Insert: {
           account_manager?: string | null
+          availability_settings?: Json | null
           bdr_assigned?: string | null
           best_times?: string | null
           billing_address?: string | null
@@ -210,6 +214,8 @@ export type Database = {
           billing_contact_name?: string | null
           billing_contact_phone?: string | null
           billing_notes?: string | null
+          calendar_connected?: boolean | null
+          calendar_provider?: string | null
           calling_hours?: string | null
           calling_timezone?: string | null
           campaign_start_date?: string | null
@@ -244,6 +250,7 @@ export type Database = {
         }
         Update: {
           account_manager?: string | null
+          availability_settings?: Json | null
           bdr_assigned?: string | null
           best_times?: string | null
           billing_address?: string | null
@@ -251,6 +258,8 @@ export type Database = {
           billing_contact_name?: string | null
           billing_contact_phone?: string | null
           billing_notes?: string | null
+          calendar_connected?: boolean | null
+          calendar_provider?: string | null
           calling_hours?: string | null
           calling_timezone?: string | null
           campaign_start_date?: string | null
@@ -332,6 +341,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      event_type_assignments: {
+        Row: {
+          client_id: string
+          created_at: string
+          event_type_id: string
+          id: string
+          is_active: boolean | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          event_type_id: string
+          id?: string
+          is_active?: boolean | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          event_type_id?: string
+          id?: string
+          is_active?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_type_assignments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_type_assignments_event_type_id_fkey"
+            columns: ["event_type_id"]
+            isOneToOne: false
+            referencedRelation: "event_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_types: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          duration: number
+          id: string
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration?: number
+          id?: string
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration?: number
+          id?: string
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       meetings: {
         Row: {
