@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminClients from "./pages/admin/AdminClients";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminScheduling from "./pages/admin/AdminScheduling";
 import WorkspaceDashboard from "./pages/workspace/WorkspaceDashboard";
 import WorkspaceCampaigns from "./pages/workspace/WorkspaceCampaigns";
 import WorkspaceCallLog from "./pages/workspace/WorkspaceCallLog";
@@ -62,6 +63,13 @@ const App = () => (
               <ProtectedRoute>
                 <AdminGuard>
                   <AdminUsers />
+                </AdminGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/scheduling" element={
+              <ProtectedRoute>
+                <AdminGuard>
+                  <AdminScheduling />
                 </AdminGuard>
               </ProtectedRoute>
             } />

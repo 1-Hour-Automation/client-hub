@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -25,8 +26,10 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Calendar } from 'lucide-react';
+import { Plus, Calendar, Link2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { MeetingsCalendarView } from '@/components/meetings/MeetingsCalendarView';
+import { BookingLinksView } from '@/components/meetings/BookingLinksView';
 
 interface MeetingRow {
   id: string;
@@ -59,6 +62,7 @@ export default function WorkspaceMeetings() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('list');
   const [newMeeting, setNewMeeting] = useState({
     title: '',
     contact_id: '',
@@ -201,7 +205,7 @@ export default function WorkspaceMeetings() {
           <div>
             <h1 className="text-2xl font-semibold text-foreground">Meetings</h1>
             <p className="text-muted-foreground mt-1">
-              View scheduled meetings booked by our team.
+              View scheduled meetings and manage booking links.
             </p>
           </div>
           {isInternalUser && (
@@ -297,26 +301,53 @@ export default function WorkspaceMeetings() {
           )}
         </div>
 
-        <DataTable
-          columns={columns}
-          data={meetings}
-          isLoading={isLoading}
-          emptyState={
-            <EmptyState
-              icon={Calendar}
-              title="No meetings yet"
-              description="Book your first meeting to start tracking scheduled calls."
-              action={
-                isInternalUser ? (
-                  <Button onClick={() => setIsDialogOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Meeting
-                  </Button>
-                ) : undefined
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="list" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Meeting List
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Calendar View
+            </TabsTrigger>
+            <TabsTrigger value="booking" className="flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
+              Booking Links
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="list" className="mt-6">
+            <DataTable
+              columns={columns}
+              data={meetings}
+              isLoading={isLoading}
+              emptyState={
+                <EmptyState
+                  icon={Calendar}
+                  title="No meetings yet"
+                  description="Book your first meeting to start tracking scheduled calls."
+                  action={
+                    isInternalUser ? (
+                      <Button onClick={() => setIsDialogOpen(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Meeting
+                      </Button>
+                    ) : undefined
+                  }
+                />
               }
             />
-          }
-        />
+          </TabsContent>
+
+          <TabsContent value="calendar" className="mt-6">
+            <MeetingsCalendarView meetings={meetings} />
+          </TabsContent>
+
+          <TabsContent value="booking" className="mt-6">
+            {clientId && <BookingLinksView clientId={clientId} />}
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
