@@ -699,10 +699,25 @@ export default function WorkspaceCampaignView() {
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     <Link className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <span className="text-muted-foreground">Scheduling Link</span>
-                      <p className="font-medium text-primary">calendly.com/client</p>
+                    <div className="flex-1">
+                      <span className="text-muted-foreground">Booking Link</span>
+                      <p className="font-mono text-xs text-primary truncate">
+                        /book/{clientId}/{campaignId}
+                      </p>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 gap-1 text-xs"
+                      onClick={() => {
+                        const bookingUrl = `${window.location.origin}/book/${clientId}/${campaignId}`;
+                        navigator.clipboard.writeText(bookingUrl);
+                        toast({ title: 'Copied!', description: 'Booking link copied to clipboard.' });
+                      }}
+                    >
+                      <Copy className="h-3 w-3" />
+                      Copy
+                    </Button>
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     <User className="h-4 w-4 text-muted-foreground" />
