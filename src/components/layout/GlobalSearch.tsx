@@ -33,9 +33,6 @@ export function GlobalSearch() {
   const navigate = useNavigate();
   const { isInternalUser } = useAuth();
 
-  // Only show for internal users
-  if (!isInternalUser) return null;
-
   const fetchData = useCallback(async () => {
     if (!open) return;
     
@@ -85,15 +82,18 @@ export function GlobalSearch() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  const handleSelectClient = (client: Client) => {
+  const handleSelectClient = useCallback((client: Client) => {
     setOpen(false);
     navigate(`/workspace/${client.id}`);
-  };
+  }, [navigate]);
 
-  const handleSelectCampaign = (campaign: Campaign) => {
+  const handleSelectCampaign = useCallback((campaign: Campaign) => {
     setOpen(false);
     navigate(`/workspace/${campaign.client_id}/campaigns/${campaign.id}`);
-  };
+  }, [navigate]);
+
+  // Only show for internal users - AFTER all hooks
+  if (!isInternalUser) return null;
 
   return (
     <>
