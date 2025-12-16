@@ -28,7 +28,6 @@ const HIRING_FOCUS = [
 ] as const;
 
 const ORG_TYPES = [
-  'Law firm',
   'Recruitment agency',
   'Staffing firm',
   'Professional services firm',
