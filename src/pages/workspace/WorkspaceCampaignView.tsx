@@ -31,6 +31,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CampaignOnboardingForm } from '@/components/campaigns/CampaignOnboardingForm';
 import { CandidateOnboardingForm, CandidateOnboardingData } from '@/components/campaigns/CandidateOnboardingForm';
 import { CandidateOnboardingSummary } from '@/components/campaigns/CandidateOnboardingSummary';
+import { CandidateTargetingBriefForm, CandidateTargetingBriefData } from '@/components/campaigns/CandidateTargetingBriefForm';
+import { CandidateTargetingBriefSummary } from '@/components/campaigns/CandidateTargetingBriefSummary';
 import { ClientTargetingBriefForm, ClientTargetingBriefData } from '@/components/campaigns/ClientTargetingBriefForm';
 import { ClientTargetingBriefSummary } from '@/components/campaigns/ClientTargetingBriefSummary';
 import { CreatePerformancePlanModal } from '@/components/campaigns/CreatePerformancePlanModal';
@@ -714,27 +716,26 @@ export default function WorkspaceCampaignView() {
           </TabsContent>
 
           <TabsContent value="onboarding" className="space-y-6">
-            {/* Candidate Onboarding */}
+            {/* Candidate Targeting Brief */}
             {campaign.target?.toLowerCase() === 'candidate' && (
               <>
                 {campaign.candidate_onboarding_data?.completed_at && !candidateOnboardingEditMode ? (
-                  <CandidateOnboardingSummary
-                    data={campaign.candidate_onboarding_data}
+                  <CandidateTargetingBriefSummary
+                    data={campaign.candidate_onboarding_data as unknown as CandidateTargetingBriefData}
                     campaignName={campaign.name}
                     workspaceName={clientName}
                     isInternalUser={isInternalUser}
                     onEditClick={() => setCandidateOnboardingEditMode(true)}
                   />
                 ) : (
-                  <CandidateOnboardingForm
+                  <CandidateTargetingBriefForm
                     campaignId={campaignId!}
                     campaignName={campaign.name}
                     workspaceName={clientName}
-                    roleTitles={campaign.candidate_onboarding_data?.role_titles}
-                    initialData={campaign.candidate_onboarding_data}
+                    initialData={campaign.candidate_onboarding_data as unknown as CandidateTargetingBriefData}
                     isInternalUser={isInternalUser}
                     onCompleted={handleCandidateOnboardingCompleted}
-                    onDataUpdated={handleCandidateDataUpdated}
+                    onDataUpdated={(data) => handleCandidateDataUpdated(data as unknown as CandidateOnboardingData)}
                   />
                 )}
               </>
