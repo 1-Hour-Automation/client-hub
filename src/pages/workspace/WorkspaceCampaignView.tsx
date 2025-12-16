@@ -24,13 +24,11 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { ArrowLeft, AlertTriangle, Calendar, Users, Phone, MessageSquare, Clock, Globe, Link, User, CheckCircle, Percent, PhoneCall, Send, ClipboardList, Rocket, MoreHorizontal, Copy, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CampaignOnboardingForm } from '@/components/campaigns/CampaignOnboardingForm';
-import { CandidateOnboardingForm, CandidateOnboardingData } from '@/components/campaigns/CandidateOnboardingForm';
-import { CandidateOnboardingSummary } from '@/components/campaigns/CandidateOnboardingSummary';
 import { CandidateTargetingBriefForm, CandidateTargetingBriefData } from '@/components/campaigns/CandidateTargetingBriefForm';
 import { CandidateTargetingBriefSummary } from '@/components/campaigns/CandidateTargetingBriefSummary';
 import { ClientTargetingBriefForm, ClientTargetingBriefData } from '@/components/campaigns/ClientTargetingBriefForm';
@@ -58,27 +56,7 @@ interface CampaignDetails {
   created_at: string;
   client_id: string;
   onboarding_completed_at: string | null;
-  onboarding_target_job_titles: string | null;
-  onboarding_industries_to_target: string | null;
-  onboarding_company_size_range: string | null;
-  onboarding_required_skills: string | null;
-  onboarding_locations_to_target: string | null;
-  onboarding_excluded_industries: string | null;
-  onboarding_example_ideal_companies: string | null;
-  onboarding_value_proposition: string | null;
-  onboarding_key_pain_points: string | null;
-  onboarding_unique_differentiator: string | null;
-  onboarding_example_messaging: string | null;
-  onboarding_common_objections: string | null;
-  onboarding_recommended_responses: string | null;
-  onboarding_compliance_notes: string | null;
-  onboarding_qualified_prospect_definition: string | null;
-  onboarding_disqualifying_factors: string | null;
-  onboarding_scheduling_link: string | null;
-  onboarding_target_timezone: string | null;
-  onboarding_booking_instructions: string | null;
-  onboarding_bdr_notes: string | null;
-  candidate_onboarding_data: CandidateOnboardingData | null;
+  candidate_onboarding_data: CandidateTargetingBriefData | null;
   client_targeting_brief_data: ClientTargetingBriefData | null;
 }
 
@@ -143,7 +121,7 @@ export default function WorkspaceCampaignView() {
     setCandidateOnboardingEditMode(false);
   }, []);
 
-  const handleCandidateDataUpdated = useCallback((data: CandidateOnboardingData) => {
+  const handleCandidateDataUpdated = useCallback((data: CandidateTargetingBriefData) => {
     setCampaign(prev => prev ? { ...prev, candidate_onboarding_data: data } : null);
   }, []);
 
@@ -192,7 +170,7 @@ export default function WorkspaceCampaignView() {
 
         setCampaign({
           ...campaignData,
-          candidate_onboarding_data: campaignData.candidate_onboarding_data as CandidateOnboardingData | null,
+          candidate_onboarding_data: campaignData.candidate_onboarding_data as CandidateTargetingBriefData | null,
           client_targeting_brief_data: campaignData.client_targeting_brief_data as ClientTargetingBriefData | null,
         });
         setOnboardingCompleted(!!campaignData.onboarding_completed_at);
@@ -429,26 +407,8 @@ export default function WorkspaceCampaignView() {
           campaign_type: campaign.campaign_type,
           target: campaign.target,
           tier: campaign.tier,
-          onboarding_target_job_titles: campaign.onboarding_target_job_titles,
-          onboarding_industries_to_target: campaign.onboarding_industries_to_target,
-          onboarding_company_size_range: campaign.onboarding_company_size_range,
-          onboarding_required_skills: campaign.onboarding_required_skills,
-          onboarding_locations_to_target: campaign.onboarding_locations_to_target,
-          onboarding_excluded_industries: campaign.onboarding_excluded_industries,
-          onboarding_example_ideal_companies: campaign.onboarding_example_ideal_companies,
-          onboarding_value_proposition: campaign.onboarding_value_proposition,
-          onboarding_key_pain_points: campaign.onboarding_key_pain_points,
-          onboarding_unique_differentiator: campaign.onboarding_unique_differentiator,
-          onboarding_example_messaging: campaign.onboarding_example_messaging,
-          onboarding_common_objections: campaign.onboarding_common_objections,
-          onboarding_recommended_responses: campaign.onboarding_recommended_responses,
-          onboarding_compliance_notes: campaign.onboarding_compliance_notes,
-          onboarding_qualified_prospect_definition: campaign.onboarding_qualified_prospect_definition,
-          onboarding_disqualifying_factors: campaign.onboarding_disqualifying_factors,
-          onboarding_scheduling_link: campaign.onboarding_scheduling_link,
-          onboarding_target_timezone: campaign.onboarding_target_timezone,
-          onboarding_booking_instructions: campaign.onboarding_booking_instructions,
-          onboarding_bdr_notes: campaign.onboarding_bdr_notes,
+          candidate_onboarding_data: campaign.candidate_onboarding_data as unknown as Json,
+          client_targeting_brief_data: campaign.client_targeting_brief_data as unknown as Json,
           onboarding_completed_at: campaign.onboarding_completed_at,
         })
         .select('id')
@@ -774,10 +734,10 @@ export default function WorkspaceCampaignView() {
                     clientId={clientId!}
                     campaignName={campaign.name}
                     workspaceName={clientName}
-                    initialData={campaign.candidate_onboarding_data as unknown as CandidateTargetingBriefData}
+                    initialData={campaign.candidate_onboarding_data}
                     isInternalUser={isInternalUser}
                     onCompleted={handleCandidateOnboardingCompleted}
-                    onDataUpdated={(data) => handleCandidateDataUpdated(data as unknown as CandidateOnboardingData)}
+                    onDataUpdated={handleCandidateDataUpdated}
                     onStatusUpdated={handleStatusUpdated}
                   />
                 )}
@@ -1062,7 +1022,14 @@ export default function WorkspaceCampaignView() {
           <CreatePerformancePlanModal
             open={isPerformanceModalOpen}
             onOpenChange={setIsPerformanceModalOpen}
-            sprintCampaign={campaign}
+            sprintCampaign={{
+              id: campaign.id,
+              name: campaign.name,
+              client_id: campaign.client_id,
+              target: campaign.target,
+              candidate_onboarding_data: campaign.candidate_onboarding_data as unknown as Json,
+              client_targeting_brief_data: campaign.client_targeting_brief_data as unknown as Json,
+            }}
           />
         )}
 
