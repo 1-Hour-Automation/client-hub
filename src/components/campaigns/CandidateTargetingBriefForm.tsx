@@ -209,12 +209,14 @@ export interface CandidateTargetingBriefData extends CandidateTargetingBriefForm
 
 interface CandidateTargetingBriefFormProps {
   campaignId: string;
+  clientId: string;
   campaignName: string;
   workspaceName: string;
   initialData?: CandidateTargetingBriefData | null;
   isInternalUser: boolean;
   onCompleted: () => void;
   onDataUpdated: (data: CandidateTargetingBriefData) => void;
+  onStatusUpdated?: () => void;
 }
 
 interface MultiSelectFieldProps {
@@ -251,12 +253,14 @@ function MultiSelectField({ options, value, onChange, hasError }: MultiSelectFie
 
 export function CandidateTargetingBriefForm({
   campaignId,
+  clientId,
   campaignName,
   workspaceName,
   initialData,
   isInternalUser,
   onCompleted,
   onDataUpdated,
+  onStatusUpdated,
 }: CandidateTargetingBriefFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -306,20 +310,40 @@ export function CandidateTargetingBriefForm({
         completed_at: new Date().toISOString(),
       };
 
+      // Update campaign with targeting data and change status to pending
       const { error } = await supabase
         .from('campaigns')
-        .update({ candidate_onboarding_data: JSON.parse(JSON.stringify(dataToSave)) })
+        .update({ 
+          candidate_onboarding_data: JSON.parse(JSON.stringify(dataToSave)),
+          status: 'pending',
+          phase: 'sprint',
+          onboarding_completed_at: new Date().toISOString(),
+        })
         .eq('id', campaignId);
 
       if (error) throw error;
 
+      // Create notification for Account Manager review
+      await supabase.from('notifications').insert({
+        client_id: clientId,
+        campaign_id: campaignId,
+        type: 'onboarding_completed',
+        title: 'Onboarding Submitted for Review',
+        body: `The candidate targeting brief for "${campaignName}" has been submitted and is ready for your review.`,
+        severity: 'info',
+        status: 'open',
+        requires_client_action: false,
+        visible_to_client: true,
+      });
+
       toast({
-        title: 'Targeting brief saved',
-        description: 'Your candidate targeting brief has been saved successfully.',
+        title: 'Targeting brief submitted',
+        description: 'Your targeting brief has been submitted for review.',
       });
 
       onDataUpdated(dataToSave);
       onCompleted();
+      onStatusUpdated?.();
     } catch (error) {
       console.error('Error saving targeting brief:', error);
       toast({
