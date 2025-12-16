@@ -715,7 +715,7 @@ export default function WorkspaceCampaignView() {
 
           <TabsContent value="onboarding" className="space-y-6">
             {/* Candidate Onboarding */}
-            {campaign.target === 'Candidate' && (
+            {campaign.target?.toLowerCase() === 'candidate' && (
               <>
                 {campaign.candidate_onboarding_data?.completed_at && !candidateOnboardingEditMode ? (
                   <CandidateOnboardingSummary
@@ -741,7 +741,7 @@ export default function WorkspaceCampaignView() {
             )}
 
             {/* Client Targeting Brief */}
-            {campaign.target === 'Client' && (
+            {campaign.target?.toLowerCase() === 'client' && (
               <>
                 {campaign.client_targeting_brief_data?.completed_at && !clientTargetingEditMode ? (
                   <ClientTargetingBriefSummary
