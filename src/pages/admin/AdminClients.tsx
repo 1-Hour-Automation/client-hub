@@ -116,7 +116,7 @@ export default function AdminClients() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => navigate(`/workspace/${row.id}/dashboard`)}
+          onClick={() => navigate(`/workspace/${row.id}/overview`)}
         >
           <ExternalLink className="mr-2 h-4 w-4" />
           Open Workspace

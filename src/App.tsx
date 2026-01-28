@@ -16,6 +16,8 @@ import AdminClients from "./pages/admin/AdminClients";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminScheduling from "./pages/admin/AdminScheduling";
 import WorkspaceDashboard from "./pages/workspace/WorkspaceDashboard";
+import WorkspaceOverview from "./pages/workspace/WorkspaceOverview";
+import WorkspaceLanes from "./pages/workspace/WorkspaceLanes";
 import WorkspaceCampaigns from "./pages/workspace/WorkspaceCampaigns";
 import WorkspaceCallLog from "./pages/workspace/WorkspaceCallLog";
 import WorkspaceContacts from "./pages/workspace/WorkspaceContacts";
@@ -24,6 +26,7 @@ import WorkspaceCampaignView from "./pages/workspace/WorkspaceCampaignView";
 import WorkspaceNotifications from "./pages/workspace/WorkspaceNotifications";
 import WorkspaceAccountProfile from "./pages/workspace/WorkspaceAccountProfile";
 import WorkspaceIntegrations from "./pages/workspace/WorkspaceIntegrations";
+import WorkspaceClientInfo from "./pages/workspace/WorkspaceClientInfo";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +79,20 @@ const App = () => (
             } />
 
             {/* Workspace routes */}
+            <Route path="/workspace/:clientId/overview" element={
+              <ProtectedRoute>
+                <WorkspaceGuard>
+                  <WorkspaceOverview />
+                </WorkspaceGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/workspace/:clientId/lanes" element={
+              <ProtectedRoute>
+                <WorkspaceGuard>
+                  <WorkspaceLanes />
+                </WorkspaceGuard>
+              </ProtectedRoute>
+            } />
             <Route path="/workspace/:clientId/dashboard" element={
               <ProtectedRoute>
                 <WorkspaceGuard>
@@ -115,6 +132,13 @@ const App = () => (
               <ProtectedRoute>
                 <WorkspaceGuard>
                   <WorkspaceMeetings />
+                </WorkspaceGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/workspace/:clientId/client-info" element={
+              <ProtectedRoute>
+                <WorkspaceGuard>
+                  <WorkspaceClientInfo />
                 </WorkspaceGuard>
               </ProtectedRoute>
             } />
